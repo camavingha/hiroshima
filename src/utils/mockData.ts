@@ -44,3 +44,9 @@ export const MOCK_MOODS: Mood[] = [
   { id: '29', mood: 'so-so', entry_date: '2026-01-28' },
   { id: '30', mood: 'happy', entry_date: '2026-01-27' },
 ];
+
+export const MOCK_READINGS: Reading[] = [
+  {
+  }
+  ];
+ 
