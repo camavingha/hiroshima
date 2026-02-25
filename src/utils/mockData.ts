@@ -47,6 +47,22 @@ export const MOCK_MOODS: Mood[] = [
 
 export const MOCK_READINGS: Reading[] = [
   {
+    id: '1',
+    user_id: 'user-1',
+    title: 'Atomic Habits',
+    author: 'James Clear',
+    pages_read: 320,
+    total_pages: 320,
+    genre: 'self-help',
+    status: 'completed',
+    is_completed: true,
+    rating: 5,
+    notes: 'Incredible book on building better habits',
+    started_date: '2026-02-01',
+    completed_date: '2026-02-20',
+    cover_image_url: 'https://images.unsplash.com/photo-1507842217343-583f20270319?w=300&h=450&fit=crop',
+    created_at: '2026-02-01T00:00:00Z'
   }
   ];
+ ;
  
