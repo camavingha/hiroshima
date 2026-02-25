@@ -1,0 +1,2796 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.gitignore
+eslint.config.mjs
+next.config.ts
+package.json
+postcss.config.mjs
+public/file.svg
+public/globe.svg
+public/next.svg
+public/vercel.svg
+public/window.svg
+README.md
+src/app/body/page.tsx
+src/app/favicon.ico
+src/app/globals.css
+src/app/layout.tsx
+src/app/login/page.tsx
+src/app/mood/page.tsx
+src/app/page.tsx
+src/app/reading/page.tsx
+src/app/workouts/page.tsx
+src/components/habits/BodyForm.tsx
+src/components/habits/CircularProgress.tsx
+src/components/habits/ReadingFilter.tsx
+src/components/habits/ReadingForm.tsx
+src/components/habits/ReadingList.tsx
+src/components/habits/ReadingStats.tsx
+src/components/habits/ReadingTimeline.tsx
+src/components/habits/Sidebar.tsx
+src/components/habits/StatCard.tsx
+src/components/habits/UpdateProgress.tsx
+src/components/habits/WorkoutFilter.tsx
+src/components/habits/WorkoutForm.tsx
+src/components/habits/WorkoutList.tsx
+src/components/habits/WorkoutStats.tsx
+src/components/habits/WorkoutTimeline.tsx
+src/types/habits.ts
+src/utils/mockData.ts
+src/utils/supabase/client.ts
+tsconfig.json
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="src/components/habits/CircularProgress.tsx">
+interface CircularProgressProps {
+  progress: number;
+  size?: 'sm' | 'md' | 'lg';
+  color?: 'purple' | 'blue' | 'green' | 'orange';
+}
+
+export default function CircularProgress({ progress, size = 'md', color = 'purple' }: CircularProgressProps) {
+  const sizeMap = {
+    sm: { radius: 35, circumference: 2 * Math.PI * 35 },
+    md: { radius: 45, circumference: 2 * Math.PI * 45 },
+    lg: { radius: 60, circumference: 2 * Math.PI * 60 },
+  };
+
+  const { radius, circumference } = sizeMap[size];
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+  const colorClasses: Record<'purple' | 'blue' | 'green' | 'orange', string> = {
+    purple: 'text-purple-600',
+    blue: 'text-blue-600',
+    green: 'text-green-600',
+    orange: 'text-orange-600',
+  };
+
+  const sizeClasses: Record<'sm' | 'md' | 'lg', string> = {
+    sm: 'w-24 h-24',
+    md: 'w-32 h-32',
+    lg: 'w-40 h-40',
+  };
+
+  const textSizeClasses: Record<'sm' | 'md' | 'lg', string> = {
+    sm: 'text-xl',
+    md: 'text-2xl',
+    lg: 'text-4xl',
+  };
+
+  return (
+    <div className={`flex items-center justify-center ${sizeClasses[size]}`}>
+      <div className="relative">
+        <svg
+          className={`${sizeClasses[size]} -rotate-90`}
+          viewBox={`0 0 ${radius * 2 + 20} ${radius * 2 + 20}`}
+        >
+          {/* Background circle */}
+          <circle
+            cx={radius + 10}
+            cy={radius + 10}
+            r={radius}
+            fill="none"
+            stroke="#e5e7eb"
+            strokeWidth="3"
+          />
+          {/* Progress circle */}
+          <circle
+            cx={radius + 10}
+            cy={radius + 10}
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            className={`transition-all duration-500 ${colorClasses[color]}`}
+          />
+        </svg>
+        {/* Center text */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center">
+            <span className={`font-bold ${textSizeClasses[size]} ${colorClasses[color]}`}>
+              {Math.round(progress)}%
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/habits/ReadingFilter.tsx">
+'use client';
+import { useState } from 'react';
+import { Reading } from '@/types/habits';
+
+interface ReadingFilterProps {
+  onFilter: (filtered: Reading[]) => void;
+  readings: Reading[];
+}
+
+export default function ReadingFilter({ readings, onFilter }: ReadingFilterProps) {
+  const [selectedGenre, setSelectedGenre] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
+    start: '',
+    end: '',
+  });
+
+  const handleFilterChange = (genre: string, status: string, start: string, end: string) => {
+    let filtered = readings;
+
+    if (genre !== 'all') {
+      filtered = filtered.filter(r => r.genre === genre);
+    }
+
+    if (status !== 'all') {
+      filtered = filtered.filter(r => r.status === status);
+    }
+
+    if (start) {
+      filtered = filtered.filter(r => new Date(r.started_date) >= new Date(start));
+    }
+
+    if (end) {
+      filtered = filtered.filter(r => new Date(r.started_date) <= new Date(end));
+    }
+
+    onFilter(filtered);
+  };
+
+  const handleGenreChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newGenre = e.target.value;
+    setSelectedGenre(newGenre);
+    handleFilterChange(newGenre, selectedStatus, dateRange.start, dateRange.end);
+  };
+
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newStatus = e.target.value;
+    setSelectedStatus(newStatus);
+    handleFilterChange(selectedGenre, newStatus, dateRange.start, dateRange.end);
+  };
+
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newStart = e.target.value;
+    setDateRange(prev => ({ ...prev, start: newStart }));
+    handleFilterChange(selectedGenre, selectedStatus, newStart, dateRange.end);
+  };
+
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEnd = e.target.value;
+    setDateRange(prev => ({ ...prev, end: newEnd }));
+    handleFilterChange(selectedGenre, selectedStatus, dateRange.start, newEnd);
+  };
+
+  const handleReset = () => {
+    setSelectedGenre('all');
+    setSelectedStatus('all');
+    setDateRange({ start: '', end: '' });
+    onFilter(readings);
+  };
+
+  return (
+    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+      <h3 className="text-lg font-bold text-gray-800 mb-4">Filter Books</h3>
+
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Genre</label>
+          <select
+            value={selectedGenre}
+            onChange={handleGenreChange}
+            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+          >
+            <option value="all">All Genres</option>
+            <option value="fiction">Fiction</option>
+            <option value="non-fiction">Non-Fiction</option>
+            <option value="science">Science</option>
+            <option value="biography">Biography</option>
+            <option value="history">History</option>
+            <option value="self-help">Self-Help</option>
+            <option value="mystery">Mystery</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Status</label>
+          <select
+            value={selectedStatus}
+            onChange={handleStatusChange}
+            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+          >
+            <option value="all">All Status</option>
+            <option value="reading">Reading</option>
+            <option value="completed">Completed</option>
+            <option value="paused">Paused</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">From Date</label>
+          <input
+            type="date"
+            value={dateRange.start}
+            onChange={handleStartDateChange}
+            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">To Date</label>
+          <input
+            type="date"
+            value={dateRange.end}
+            onChange={handleEndDateChange}
+            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+          />
+        </div>
+
+        <div className="flex items-end">
+          <button
+            onClick={handleReset}
+            className="w-full py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/habits/ReadingForm.tsx">
+'use client';
+import { useState } from 'react';
+import { createClient } from '@/utils/supabase/client';
+import { Reading } from '@/types/habits';
+
+interface ReadingFormProps {
+  onReadingAdded?: (reading: Reading) => void;
+  isOpen?: boolean;
+  onToggle?: (open: boolean) => void;
+}
+
+export default function ReadingForm({ onReadingAdded, isOpen = false, onToggle }: ReadingFormProps) {
+  const supabase = createClient();
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [formData, setFormData] = useState({
+    title: '',
+    author: '',
+    total_pages: '',
+    pages_read: '',
+    genre: 'fiction' as Reading['genre'],
+    status: 'reading' as Reading['status'],
+    rating: '',
+    notes: '',
+    started_date: new Date().toISOString().split('T')[0],
+    completed_date: '',
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+const uploadImage = async (file: File, bookTitle: string): Promise<string | null> => {
+  try {
+    setUploading(true);
+    
+    // 1. Get the original file extension (e.g., .png, .jpg, .jpeg)
+    const fileExt = file.name.split('.').pop();
+    const timestamp = Date.now();
+    // 2. Create a clean filename using the actual extension
+    const fileName = `${timestamp}-${bookTitle.replace(/\s+/g, '-')}.${fileExt}`;
+    
+    const { data, error } = await supabase.storage
+      .from('book-covers')
+      .upload(`public/${fileName}`, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type, // 3. Set the correct MIME type (image/png, etc.)
+      });
+
+    if (error) {
+      console.error('Upload error:', error);
+      return null;
+    }
+
+    const { data: publicData } = supabase.storage
+      .from('book-covers')
+      .getPublicUrl(`public/${fileName}`);
+
+    return publicData?.publicUrl || null;
+  } catch (err) {
+    console.error('Upload failed:', err);
+    return null;
+  } finally {
+    setUploading(false);
+  }
+};
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Get current user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        alert('Error: Could not get user. Please log in.');
+        return;
+      }
+
+      let coverImageUrl: string | undefined;
+
+      // Upload image if selected
+      if (imageFile) {
+        coverImageUrl = await uploadImage(imageFile, formData.title) || undefined;
+      }
+
+      const newReading = {
+        user_id: user.id,
+        title: formData.title,
+        author: formData.author,
+        total_pages: parseInt(formData.total_pages),
+        pages_read: parseInt(formData.pages_read),
+        is_completed: false,
+        genre: formData.genre,
+        status: formData.status,
+        rating: formData.rating ? parseInt(formData.rating) : undefined,
+        notes: formData.notes || undefined,
+        started_date: formData.started_date,
+        completed_date: formData.completed_date || undefined,
+        cover_image_url: coverImageUrl,
+      };
+
+      const { data, error } = await supabase
+        .from('books')
+        .insert([newReading])
+        .select()
+        .single();
+
+      if (error) {
+        alert(`Error: ${error.message}`);
+      } else {
+        alert('Book added successfully!');
+        onReadingAdded?.(data);
+        onToggle?.(false);
+        setFormData({
+          title: '',
+          author: '',
+          total_pages: '',
+          pages_read: '',
+          genre: 'fiction',
+          status: 'reading',
+          rating: '',
+          notes: '',
+          started_date: new Date().toISOString().split('T')[0],
+          completed_date: '',
+        });
+        setImageFile(null);
+        setImagePreview('');
+      }
+    } catch (err) {
+      alert('Failed to add book');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      {/* Floating Action Button */}
+      <button
+        onClick={() => onToggle?.(!isOpen)}
+        className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-full flex items-center justify-center text-3xl font-bold hover:shadow-xl hover:scale-110 transition-all transform z-50"
+      >
+        <span className={`transform transition-transform duration-300 ${isOpen ? 'rotate-45' : ''}`}>+</span>
+      </button>
+
+      {/* Modal Overlay & Form */}
+      {isOpen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => onToggle?.(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-gray-100 p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">Add New Book</h2>
+              <button
+                onClick={() => onToggle?.(false)}
+                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {/* Book Cover Upload */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Book Cover (optional)</label>
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <div className="relative border-2 border-dashed border-purple-300 rounded-lg p-4 text-center hover:border-purple-500 transition-colors cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="sr-only"
+                        id="cover-upload"
+                        disabled={uploading}
+                      />
+                      <label htmlFor="cover-upload" className="cursor-pointer">
+                        {imagePreview ? (
+                          <div className="text-sm text-green-600 font-semibold">✓ Image selected</div>
+                        ) : (
+                          <div className="text-sm text-gray-500">
+                            <div className="text-2xl mb-1">📸</div>
+                            <p>Click to upload cover image</p>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+                  </div>
+                  {imagePreview && (
+                    <div className="w-24 h-32 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+                      <img src={imagePreview} alt="Cover preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Title</label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleChange}
+                    required
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                    placeholder="Book title"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Author</label>
+                  <input
+                    type="text"
+                    name="author"
+                    value={formData.author}
+                    onChange={handleChange}
+                    required
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                    placeholder="Author name"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Genre</label>
+                  <select
+                    name="genre"
+                    value={formData.genre}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  >
+                    <option value="fiction">Fiction</option>
+                    <option value="non-fiction">Non-Fiction</option>
+                    <option value="science">Science</option>
+                    <option value="biography">Biography</option>
+                    <option value="history">History</option>
+                    <option value="self-help">Self-Help</option>
+                    <option value="mystery">Mystery</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Status</label>
+                  <select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  >
+                    <option value="reading">Reading</option>
+                    <option value="completed">Completed</option>
+                    <option value="paused">Paused</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Rating (optional)</label>
+                  <select
+                    name="rating"
+                    value={formData.rating}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  >
+                    <option value="">Not rated</option>
+                    <option value="1">⭐ 1 Star</option>
+                    <option value="2">⭐⭐ 2 Stars</option>
+                    <option value="3">⭐⭐⭐ 3 Stars</option>
+                    <option value="4">⭐⭐⭐⭐ 4 Stars</option>
+                    <option value="5">⭐⭐⭐⭐⭐ 5 Stars</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Total Pages</label>
+                  <input
+                    type="number"
+                    name="total_pages"
+                    value={formData.total_pages}
+                    onChange={handleChange}
+                    required
+                    min="1"
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                    placeholder="300"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Pages Read</label>
+                  <input
+                    type="number"
+                    name="pages_read"
+                    value={formData.pages_read}
+                    onChange={handleChange}
+                    required
+                    min="0"
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                    placeholder="100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Start Date</label>
+                  <input
+                    type="date"
+                    name="started_date"
+                    value={formData.started_date}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              {formData.status === 'completed' && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Completion Date</label>
+                  <input
+                    type="date"
+                    name="completed_date"
+                    value={formData.completed_date}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Notes (optional)</label>
+                <textarea
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none resize-none"
+                  placeholder="Your thoughts on this book..."
+                  rows={3}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || uploading}
+                className="w-full py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors disabled:bg-gray-400"
+              >
+                {loading || uploading ? (uploading ? 'Uploading image...' : 'Adding...') : 'Add Book'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+</file>
+
+<file path="src/components/habits/ReadingList.tsx">
+import { Reading } from '@/types/habits';
+import CircularProgress from './CircularProgress';
+
+interface ReadingListProps {
+  readings: Reading[];
+}
+
+const genreColors: Record<Reading['genre'], string> = {
+  fiction: 'bg-pink-100 text-pink-800',
+  'non-fiction': 'bg-blue-100 text-blue-800',
+  science: 'bg-cyan-100 text-cyan-800',
+  biography: 'bg-amber-100 text-amber-800',
+  history: 'bg-orange-100 text-orange-800',
+  'self-help': 'bg-green-100 text-green-800',
+  mystery: 'bg-purple-100 text-purple-800',
+  other: 'bg-gray-100 text-gray-800',
+};
+
+export default function ReadingList({ readings }: ReadingListProps) {
+  if (readings.length === 0) {
+    return (
+      <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm text-center">
+        <p className="text-gray-500 text-lg">No books found.</p>
+      </div>
+    );
+  }
+
+  const sorted = [...readings].sort((a, b) => new Date(b.started_date).getTime() - new Date(a.started_date).getTime());
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {sorted.map(reading => {
+        const progress = (reading.pages_read / reading.total_pages) * 100;
+        const isCompleted = reading.status === 'completed';
+
+        return (
+          <div key={reading.id} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-6">
+            {/* Left: Book Cover (Compact) */}
+            <div className="w-20 aspect-[2/3] rounded-lg overflow-hidden shadow-sm flex-shrink-0">
+              {reading.cover_image_url ? (
+                <img src={reading.cover_image_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gray-50 flex items-center justify-center text-2xl opacity-30">📖</div>
+              )}
+            </div>
+
+            {/* Middle: Progress Circle (Referencing your side-by-side image) */}
+            <div className="flex-shrink-0 scale-90">
+              <CircularProgress 
+                progress={progress} 
+                size="md" 
+                color={isCompleted ? 'green' : 'purple'} 
+              />
+            </div>
+
+            {/* Right: Detailed Text */}
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-gray-900 text-base truncate leading-tight">
+                {reading.title}
+              </h3>
+              <p className="text-xs text-gray-500 font-medium truncate mb-2">
+                {reading.author}
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-black text-gray-900">
+                  {reading.pages_read}
+                </span>
+                <span className="text-sm text-gray-400 font-normal">/ {reading.total_pages}</span>
+              </div>
+              <span className={`inline-block mt-2 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${genreColors[reading.genre]}`}>
+                {reading.genre}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/habits/ReadingStats.tsx">
+import { Reading } from '@/types/habits';
+
+interface ReadingStatsProps {
+  readings: Reading[];
+}
+
+export default function ReadingStats({ readings }: ReadingStatsProps) {
+  const completed = readings.filter(r => r.status === 'completed').length;
+  const totalPagesRead = readings.reduce((acc, r) => acc + r.pages_read, 0);
+  const avgRating = readings.filter(r => r.rating).length > 0
+    ? (readings.filter(r => r.rating).reduce((acc, r) => acc + (r.rating || 0), 0) / readings.filter(r => r.rating).length).toFixed(1)
+    : 'N/A';
+
+  const genreCount = readings.reduce((acc, r) => ({
+    ...acc,
+    [r.genre]: (acc[r.genre] || 0) + 1,
+  }), {} as Record<string, number>);
+
+  const favoriteGenre = Object.entries(genreCount).sort((a, b) => b[1] - a[1])[0];
+  const favoriteGenreName = favoriteGenre ? favoriteGenre[0].charAt(0).toUpperCase() + favoriteGenre[0].slice(1) : 'N/A';
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl border border-amber-200">
+        <p className="text-xs font-semibold text-amber-600 uppercase mb-2">Books Completed</p>
+        <div className="flex items-baseline">
+          <span className="text-3xl font-bold text-amber-900">{completed}</span>
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
+        <p className="text-xs font-semibold text-blue-600 uppercase mb-2">Pages Read</p>
+        <div className="flex items-baseline">
+          <span className="text-3xl font-bold text-blue-900">{totalPagesRead}</span>
+          <span className="ml-1 text-sm text-blue-700">pages</span>
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-6 rounded-xl border border-yellow-200">
+        <p className="text-xs font-semibold text-yellow-600 uppercase mb-2">Avg Rating</p>
+        <div className="flex items-baseline">
+          <span className="text-3xl font-bold text-yellow-900">{avgRating}</span>
+          <span className="ml-1 text-sm text-yellow-700">⭐</span>
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-br from-pink-50 to-pink-100 p-6 rounded-xl border border-pink-200">
+        <p className="text-xs font-semibold text-pink-600 uppercase mb-2">Fav Genre</p>
+        <div className="flex items-baseline">
+          <span className="text-2xl font-bold text-pink-900">{favoriteGenreName}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/habits/ReadingTimeline.tsx">
+'use client';
+import { Reading } from '@/types/habits';
+
+interface ReadingTimelineProps {
+  readings: Reading[];
+}
+
+export default function ReadingTimeline({ readings }: ReadingTimelineProps) {
+  if (readings.length === 0) {
+    return (
+      <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm text-left">
+        <p className="text-gray-500 text-sm">No activity found.</p>
+      </div>
+    );
+  }
+
+  const sorted = [...readings].sort((a, b) => 
+    new Date(b.started_date).getTime() - new Date(a.started_date).getTime()
+  );
+
+  const grouped = sorted.reduce((acc, reading) => {
+    const date = new Date(reading.started_date);
+    const monthYear = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    if (!acc[monthYear]) acc[monthYear] = [];
+    acc[monthYear].push(reading);
+    return acc;
+  }, {} as Record<string, Reading[]>);
+
+  return (
+    <div className="w-full max-w-5xl py-4">
+      {Object.entries(grouped).map(([monthYear, monthReadings]) => (
+        <div key={monthYear} className="relative pl-8 mb-12 last:mb-0">
+          {/* Vertical Timeline Line */}
+          <div className="absolute left-[11px] top-2 bottom-0 w-[2px] bg-gray-100" />
+          
+          <div className="flex items-center gap-3 mb-6">
+            <h4 className="font-bold text-gray-900 text-sm tracking-tight">{monthYear}</h4>
+            <div className="flex-1 h-[1px] bg-gray-100" />
+          </div>
+
+          <div className="space-y-8">
+            <div className="flex items-center gap-3 text-gray-700">
+              <div className="w-6 h-6 rounded-md bg-white border border-gray-200 flex items-center justify-center text-xs shadow-sm">
+                📖
+              </div>
+              <p className="text-sm font-medium">
+                Updated <span className="font-bold text-gray-900">{monthReadings.length} books</span> in current library
+              </p>
+            </div>
+
+            <div className="ml-9 space-y-6">
+              {monthReadings.map(reading => {
+                const progress = (reading.pages_read / reading.total_pages) * 100;
+                const formattedDate = new Date(reading.started_date).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                return (
+                  <div key={reading.id} className="flex flex-col md:flex-row md:items-center justify-between gap-6 group">
+                    <div className="flex items-center gap-4 flex-1">
+                      {/* 1. Small Book Cover on the Left */}
+                      <div className="w-10 h-14 rounded-md overflow-hidden shadow-sm border border-gray-100 flex-shrink-0">
+                        {reading.cover_image_url ? (
+                          <img src={reading.cover_image_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-gray-50 flex items-center justify-center text-[10px] opacity-40">
+                            BK
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        <div className="flex items-center gap-3">
+                          <span className="text-blue-600 hover:underline text-sm font-bold cursor-pointer truncate">
+                            {reading.title.toLowerCase().replace(/\s+/g, '-')}
+                          </span>
+                          <span className="text-[11px] text-gray-400 font-medium flex-shrink-0">
+                            {reading.pages_read} pages
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-gray-400 uppercase tracking-tighter">
+                          Logged on {formattedDate}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* 2. Progress Bar (Pill Shape) */}
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-700 ${progress === 100 ? 'bg-green-500' : 'bg-green-400'}`}
+                          style={{ 
+                            width: `${progress}%`, 
+                            opacity: progress === 100 ? '1' : '0.4' 
+                          }}
+                        />
+                      </div>
+                      <span className="text-[10px] font-bold text-gray-400 w-8 text-right">
+                        {Math.round(progress)}%
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/habits/UpdateProgress.tsx">
+'use client';
+import { useState } from 'react';
+import { createClient } from '@/utils/supabase/client';
+import { Reading } from '@/types/habits';
+import CircularProgress from './CircularProgress';
+
+interface UpdateProgressProps {
+  readings: Reading[];
+  onProgressUpdated?: (reading: Reading) => void;
+}
+
+const genreEmojis: Record<Reading['genre'], string> = {
+  fiction: '📖',
+  'non-fiction': '📚',
+  science: '🔬',
+  biography: '👤',
+  history: '📜',
+  'self-help': '🌱',
+  mystery: '🔍',
+  other: '📕',
+};
+
+export default function UpdateProgress({ readings, onProgressUpdated }: UpdateProgressProps) {
+  const supabase = createClient();
+  const [loading, setLoading] = useState(false);
+  const [selectedReadingId, setSelectedReadingId] = useState<string>('');
+  const [newPagesRead, setNewPagesRead] = useState('');
+  const [sliderValue, setSliderValue] = useState(0);
+  const [displayCount, setDisplayCount] = useState(10);
+
+  const selectedReading = readings.find(r => r.id === selectedReadingId);
+  const allReadings = [...readings].sort((a, b) => new Date(b.started_date).getTime() - new Date(a.started_date).getTime());
+  const activeReadings = readings.filter(r => r.status !== 'completed');
+
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    setSliderValue(value);
+    setNewPagesRead(value.toString());
+  };
+
+  const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value) || 0;
+    const maxPages = selectedReading?.total_pages || 0;
+    const capped = Math.min(Math.max(value, 0), maxPages);
+    setNewPagesRead(capped.toString());
+    setSliderValue(capped);
+  };
+
+  const handleSelectBook = (bookId: string) => {
+    setSelectedReadingId(bookId);
+    const book = readings.find(r => r.id === bookId);
+    if (book) {
+      setNewPagesRead(book.pages_read.toString());
+      setSliderValue(book.pages_read);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!selectedReadingId || !newPagesRead) return;
+
+    setLoading(true);
+
+    try {
+      const pagesRead = parseInt(newPagesRead);
+      let newStatus: Reading['status'] = selectedReading?.status || 'reading';
+      if (pagesRead >= selectedReading!.total_pages) {
+        newStatus = 'completed';
+      }
+
+      const { data, error } = await supabase
+        .from('books')
+        .update({
+          pages_read: pagesRead,
+          status: newStatus,
+          is_completed: newStatus === 'completed',
+          completed_date: newStatus === 'completed' ? new Date().toISOString().split('T')[0] : selectedReading?.completed_date,
+        })
+        .eq('id', selectedReadingId)
+        .select()
+        .single();
+
+      if (error) {
+        alert(`Error: ${error.message}`);
+      } else {
+        onProgressUpdated?.(data);
+        setSelectedReadingId('');
+        setNewPagesRead('');
+        setSliderValue(0);
+      }
+    } catch (err) {
+      alert('Failed to update progress');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const currentProgress = selectedReading ? (parseInt(newPagesRead || '0') / selectedReading.total_pages) * 100 : 0;
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-gray-100">
+          <h2 className="text-xl font-bold text-gray-900 mb-0.5">My Books Collection</h2>
+          <p className="text-gray-500 text-xs">Click on an active book to update your progress</p>
+        </div>
+
+        {allReadings.length === 0 ? (
+          <div className="p-10 text-center text-gray-400 text-sm">No books found.</div>
+        ) : (
+          <div className="p-5">
+            {/* Grid updated to lg:grid-cols-5 for 5 books per row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {allReadings.slice(0, displayCount).map(reading => {
+                const isSelected = reading.id === selectedReadingId;
+                const isCompleted = reading.status === 'completed';
+                const progress = (reading.pages_read / reading.total_pages) * 100;
+                
+                return (
+                  <button
+                    key={reading.id}
+                    onClick={() => !isCompleted && handleSelectBook(reading.id)}
+                    className={`relative flex flex-col group transition-all text-left p-2 rounded-xl border border-transparent ${
+                      isCompleted ? 'cursor-default' : 'hover:bg-gray-50 cursor-pointer'
+                    } ${isSelected ? 'bg-blue-50/50 border-blue-100' : ''}`}
+                  >
+                    {/* 1. Smaller Book Cover */}
+                    <div className={`relative aspect-[2/3] w-full rounded-lg overflow-hidden shadow-sm border mb-3 transition-all ${
+                      isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'
+                    }`}>
+                      {reading.cover_image_url ? (
+                        <img src={reading.cover_image_url} alt={reading.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-gray-50 flex items-center justify-center">
+                          <span className="text-3xl opacity-30">{genreEmojis[reading.genre]}</span>
+                        </div>
+                      )}
+                      
+                      {isSelected && (
+                        <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center shadow-md border border-white">
+                          <span className="text-white text-[10px] font-bold">✓</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 2. Side-by-Side Details (Aligned with Arrow Direction) */}
+                    <div className="flex items-center gap-2.5">
+                      {/* Left: Progress Circle */}
+                      <div className="flex-shrink-0 scale-90 origin-left">
+                        <CircularProgress 
+                          progress={progress} 
+                          size="sm" 
+                          color={isCompleted ? 'green' : 'purple'} 
+                        />
+                      </div>
+
+                      {/* Right: Detailed Text (Smaller size for 5-column fit) */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-gray-900 text-[11px] truncate leading-tight">
+                          {reading.title}
+                        </h3>
+                        <p className="text-[10px] text-gray-500 font-medium truncate mb-0.5">
+                          {reading.author}
+                        </p>
+                        <p className="text-[11px] font-bold text-gray-800">
+                          {reading.pages_read} <span className="text-gray-400 font-normal">/ {reading.total_pages}</span>
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Form Section */}
+      {selectedReading && (
+        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl border border-blue-100 shadow-xl space-y-6 animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-4">
+            <CircularProgress progress={currentProgress} size="md" color="blue" />
+            <div>
+              <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Editing</p>
+              <h4 className="text-md font-bold text-gray-900">{selectedReading.title}</h4>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <input
+              type="range"
+              min="0"
+              max={selectedReading.total_pages}
+              value={sliderValue}
+              onChange={handleSliderChange}
+              className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+            />
+            <div className="flex justify-between items-end gap-4">
+              <div className="flex-1 space-y-1">
+                <label className="text-[9px] font-black text-gray-400 uppercase">Current Page</label>
+                <input 
+                  type="number" 
+                  value={newPagesRead} 
+                  onChange={handlePageInputChange}
+                  className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg font-bold text-blue-600 text-sm" 
+                />
+              </div>
+              <div className="text-right">
+                <label className="text-[9px] font-black text-gray-400 uppercase block">Total</label>
+                <div className="p-2 font-bold text-gray-400 text-sm">{selectedReading.total_pages}</div>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" disabled={loading} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all text-sm">
+            {loading ? 'Saving...' : 'Sync Progress'}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/habits/WorkoutFilter.tsx">
+'use client';
+import { useState } from 'react';
+import { Workout } from '@/types/habits';
+
+interface WorkoutFilterProps {
+  onFilter: (filtered: Workout[]) => void;
+  workouts: Workout[];
+}
+
+export default function WorkoutFilter({ workouts, onFilter }: WorkoutFilterProps) {
+  const [selectedType, setSelectedType] = useState<string>('all');
+  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
+    start: '',
+    end: '',
+  });
+
+  const handleFilterChange = (type: string, start: string, end: string) => {
+    let filtered = workouts;
+
+    if (type !== 'all') {
+      filtered = filtered.filter(w => w.activity_type === type);
+    }
+
+    if (start) {
+      filtered = filtered.filter(w => new Date(w.logged_date) >= new Date(start));
+    }
+
+    if (end) {
+      filtered = filtered.filter(w => new Date(w.logged_date) <= new Date(end));
+    }
+
+    onFilter(filtered);
+  };
+
+  const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newType = e.target.value;
+    setSelectedType(newType);
+    handleFilterChange(newType, dateRange.start, dateRange.end);
+  };
+
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newStart = e.target.value;
+    setDateRange(prev => ({ ...prev, start: newStart }));
+    handleFilterChange(selectedType, newStart, dateRange.end);
+  };
+
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEnd = e.target.value;
+    setDateRange(prev => ({ ...prev, end: newEnd }));
+    handleFilterChange(selectedType, dateRange.start, newEnd);
+  };
+
+  const handleReset = () => {
+    setSelectedType('all');
+    setDateRange({ start: '', end: '' });
+    onFilter(workouts);
+  };
+
+  return (
+    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+      <h3 className="text-lg font-bold text-gray-800 mb-4">Filter Workouts</h3>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Activity Type</label>
+          <select
+            value={selectedType}
+            onChange={handleTypeChange}
+            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+          >
+            <option value="all">All Activities</option>
+            <option value="running">Running</option>
+            <option value="training">Training</option>
+            <option value="walking">Walking</option>
+            <option value="swimming">Swimming</option>
+            <option value="cycling">Cycling</option>
+            <option value="yoga">Yoga</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">From Date</label>
+          <input
+            type="date"
+            value={dateRange.start}
+            onChange={handleStartDateChange}
+            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">To Date</label>
+          <input
+            type="date"
+            value={dateRange.end}
+            onChange={handleEndDateChange}
+            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+
+        <div className="flex items-end">
+          <button
+            onClick={handleReset}
+            className="w-full py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/habits/WorkoutForm.tsx">
+'use client';
+import { useState } from 'react';
+import { createClient } from '@/utils/supabase/client';
+import { Workout } from '@/types/habits';
+
+interface WorkoutFormProps {
+  onWorkoutAdded?: (workout: Workout) => void;
+}
+
+export default function WorkoutForm({ onWorkoutAdded }: WorkoutFormProps) {
+  const supabase = createClient();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    activity_type: 'running' as Workout['activity_type'],
+    duration_minutes: '',
+    distance_km: '',
+    logged_date: new Date().toISOString().split('T')[0],
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const newWorkout = {
+        activity_type: formData.activity_type,
+        duration_minutes: parseInt(formData.duration_minutes),
+        distance_km: formData.distance_km ? parseFloat(formData.distance_km) : undefined,
+        logged_date: formData.logged_date,
+      };
+
+      const { data, error } = await supabase
+        .from('workouts')
+        .insert([newWorkout])
+        .select()
+        .single();
+
+      if (error) {
+        alert(`Error: ${error.message}`);
+      } else {
+        alert('Workout logged successfully!');
+        onWorkoutAdded?.(data);
+        setFormData({
+          activity_type: 'running',
+          duration_minutes: '',
+          distance_km: '',
+          logged_date: new Date().toISOString().split('T')[0],
+        });
+      }
+    } catch (err) {
+      alert('Failed to log workout');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+      <h2 className="text-xl font-bold text-gray-800 mb-4">Log Workout</h2>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Activity Type</label>
+            <select
+              name="activity_type"
+              value={formData.activity_type}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            >
+              <option value="running">Running</option>
+              <option value="training">Training</option>
+              <option value="walking">Walking</option>
+              <option value="swimming">Swimming</option>
+              <option value="cycling">Cycling</option>
+              <option value="yoga">Yoga</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Duration (minutes)</label>
+            <input
+              type="number"
+              name="duration_minutes"
+              value={formData.duration_minutes}
+              onChange={handleChange}
+              required
+              min="1"
+              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="30"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Distance (km, optional)</label>
+            <input
+              type="number"
+              name="distance_km"
+              value={formData.distance_km}
+              onChange={handleChange}
+              step="0.1"
+              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="5.0"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Date</label>
+            <input
+              type="date"
+              name="logged_date"
+              value={formData.logged_date}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+        >
+          {loading ? 'Logging...' : 'Log Workout'}
+        </button>
+      </form>
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/habits/WorkoutList.tsx">
+import { Workout } from '@/types/habits';
+
+interface WorkoutListProps {
+  workouts: Workout[];
+}
+
+const activityColors: Record<Workout['activity_type'], string> = {
+  running: 'bg-red-100 text-red-800',
+  training: 'bg-blue-100 text-blue-800',
+  walking: 'bg-green-100 text-green-800',
+  swimming: 'bg-cyan-100 text-cyan-800',
+  cycling: 'bg-yellow-100 text-yellow-800',
+  yoga: 'bg-purple-100 text-purple-800',
+  other: 'bg-gray-100 text-gray-800',
+};
+
+const activityIcons: Record<Workout['activity_type'], string> = {
+  running: '🏃',
+  training: '💪',
+  walking: '🚶',
+  swimming: '🏊',
+  cycling: '🚴',
+  yoga: '🧘',
+  other: '⚡',
+};
+
+export default function WorkoutList({ workouts }: WorkoutListProps) {
+  if (workouts.length === 0) {
+    return (
+      <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm text-center">
+        <p className="text-gray-500 text-lg">No workouts found. Start by logging your first workout!</p>
+      </div>
+    );
+  }
+
+  // Sort by date descending
+  const sorted = [...workouts].sort((a, b) => new Date(b.logged_date).getTime() - new Date(a.logged_date).getTime());
+
+  return (
+    <div className="space-y-3">
+      {sorted.map(workout => (
+        <div key={workout.id} className="bg-white p-4 rounded-xl border border-gray-200 hover:shadow-md transition-shadow">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4 flex-1">
+              <span className="text-3xl">{activityIcons[workout.activity_type]}</span>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${activityColors[workout.activity_type]}`}>
+                    {workout.activity_type.charAt(0).toUpperCase() + workout.activity_type.slice(1)}
+                  </span>
+                  <span className="text-xs text-gray-500">{new Date(workout.logged_date).toLocaleDateString()}</span>
+                </div>
+                <div className="flex gap-4 text-sm text-gray-600">
+                  <span>⏱️ {workout.duration_minutes} mins</span>
+                  {workout.distance_km && <span>📍 {workout.distance_km} km</span>}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/habits/WorkoutStats.tsx">
+import { Workout } from '@/types/habits';
+
+interface WorkoutStatsProps {
+  workouts: Workout[];
+}
+
+export default function WorkoutStats({ workouts }: WorkoutStatsProps) {
+  const totalMinutes = workouts.reduce((acc, w) => acc + w.duration_minutes, 0);
+  const totalDistance = workouts.reduce((acc, w) => acc + (w.distance_km || 0), 0);
+  const totalWorkouts = workouts.length;
+
+  // Calculate by activity type
+  const byActivity = workouts.reduce((acc, w) => {
+    acc[w.activity_type] = (acc[w.activity_type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Most frequent activity
+  const mostFrequent = Object.entries(byActivity).sort((a, b) => b[1] - a[1])[0];
+  const mostFrequentActivity = mostFrequent ? mostFrequent[0].charAt(0).toUpperCase() + mostFrequent[0].slice(1) : 'N/A';
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
+        <p className="text-xs font-semibold text-blue-600 uppercase mb-2">Total Workouts</p>
+        <div className="flex items-baseline">
+          <span className="text-3xl font-bold text-blue-900">{totalWorkouts}</span>
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl border border-green-200">
+        <p className="text-xs font-semibold text-green-600 uppercase mb-2">Total Minutes</p>
+        <div className="flex items-baseline">
+          <span className="text-3xl font-bold text-green-900">{totalMinutes}</span>
+          <span className="ml-1 text-sm text-green-700">mins</span>
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl border border-purple-200">
+        <p className="text-xs font-semibold text-purple-600 uppercase mb-2">Total Distance</p>
+        <div className="flex items-baseline">
+          <span className="text-3xl font-bold text-purple-900">{totalDistance.toFixed(1)}</span>
+          <span className="ml-1 text-sm text-purple-700">km</span>
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl border border-orange-200">
+        <p className="text-xs font-semibold text-orange-600 uppercase mb-2">Most Frequent</p>
+        <div className="flex items-baseline">
+          <span className="text-2xl font-bold text-orange-900">{mostFrequentActivity}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/habits/WorkoutTimeline.tsx">
+import { Workout } from '@/types/habits';
+
+interface WorkoutTimelineProps {
+  workouts: Workout[];
+}
+
+const activityEmojis: Record<Workout['activity_type'], string> = {
+  running: '🏃',
+  training: '💪',
+  walking: '🚶',
+  swimming: '🏊',
+  cycling: '🚴',
+  yoga: '🧘',
+  other: '⚡',
+};
+
+export default function WorkoutTimeline({ workouts }: WorkoutTimelineProps) {
+  if (workouts.length === 0) {
+    return (
+      <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm text-center">
+        <p className="text-gray-500">No workouts to display</p>
+      </div>
+    );
+  }
+
+  // Sort by date descending and group by date
+  const sorted = [...workouts].sort((a, b) => new Date(b.logged_date).getTime() - new Date(a.logged_date).getTime());
+
+  const grouped = sorted.reduce((acc, workout) => {
+    const date = new Date(workout.logged_date).toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(workout);
+    return acc;
+  }, {} as Record<string, Workout[]>);
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="p-6 border-b border-gray-100">
+        <h3 className="text-lg font-bold text-gray-800">Workout Timeline</h3>
+      </div>
+
+      <div className="relative">
+        {Object.entries(grouped).map(([date, dayWorkouts], index) => (
+          <div key={date} className="border-b border-gray-100 last:border-b-0">
+            <div className="p-6">
+              {/* Date Header */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                <h4 className="font-semibold text-gray-700">{date}</h4>
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                  {dayWorkouts.length} {dayWorkouts.length === 1 ? 'workout' : 'workouts'}
+                </span>
+              </div>
+
+              {/* Workouts for this date */}
+              <div className="space-y-2 ml-5">
+                {dayWorkouts.map(workout => (
+                  <div
+                    key={workout.id}
+                    className="p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{activityEmojis[workout.activity_type]}</span>
+                      <div>
+                        <p className="font-medium text-gray-900 capitalize">
+                          {workout.activity_type.replace('-', ' ')}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {workout.duration_minutes} mins
+                          {workout.distance_km && ` • ${workout.distance_km} km`}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path=".gitignore">
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+</file>
+
+<file path="eslint.config.mjs">
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  // Override default ignores of eslint-config-next.
+  globalIgnores([
+    // Default ignores of eslint-config-next:
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+  ]),
+]);
+
+export default eslintConfig;
+</file>
+
+<file path="next.config.ts">
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  /* config options here */
+  reactCompiler: true,
+};
+
+export default nextConfig;
+</file>
+
+<file path="postcss.config.mjs">
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+
+export default config;
+</file>
+
+<file path="public/file.svg">
+<svg fill="none" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 13.5V5.41a1 1 0 0 0-.3-.7L9.8.29A1 1 0 0 0 9.08 0H1.5v13.5A2.5 2.5 0 0 0 4 16h8a2.5 2.5 0 0 0 2.5-2.5m-1.5 0v-7H8v-5H3v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1M9.5 5V2.12L12.38 5zM5.13 5h-.62v1.25h2.12V5zm-.62 3h7.12v1.25H4.5zm.62 3h-.62v1.25h7.12V11z" clip-rule="evenodd" fill="#666" fill-rule="evenodd"/></svg>
+</file>
+
+<file path="public/globe.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><g clip-path="url(#a)"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.27 14.1a6.5 6.5 0 0 0 3.67-3.45q-1.24.21-2.7.34-.31 1.83-.97 3.1M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.48-1.52a7 7 0 0 1-.96 0H7.5a4 4 0 0 1-.84-1.32q-.38-.89-.63-2.08a40 40 0 0 0 3.92 0q-.25 1.2-.63 2.08a4 4 0 0 1-.84 1.31zm2.94-4.76q1.66-.15 2.95-.43a7 7 0 0 0 0-2.58q-1.3-.27-2.95-.43a18 18 0 0 1 0 3.44m-1.27-3.54a17 17 0 0 1 0 3.64 39 39 0 0 1-4.3 0 17 17 0 0 1 0-3.64 39 39 0 0 1 4.3 0m1.1-1.17q1.45.13 2.69.34a6.5 6.5 0 0 0-3.67-3.44q.65 1.26.98 3.1M8.48 1.5l.01.02q.41.37.84 1.31.38.89.63 2.08a40 40 0 0 0-3.92 0q.25-1.2.63-2.08a4 4 0 0 1 .85-1.32 7 7 0 0 1 .96 0m-2.75.4a6.5 6.5 0 0 0-3.67 3.44 29 29 0 0 1 2.7-.34q.31-1.83.97-3.1M4.58 6.28q-1.66.16-2.95.43a7 7 0 0 0 0 2.58q1.3.27 2.95.43a18 18 0 0 1 0-3.44m.17 4.71q-1.45-.12-2.69-.34a6.5 6.5 0 0 0 3.67 3.44q-.65-1.27-.98-3.1" fill="#666"/></g><defs><clipPath id="a"><path fill="#fff" d="M0 0h16v16H0z"/></clipPath></defs></svg>
+</file>
+
+<file path="public/next.svg">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 394 80"><path fill="#000" d="M262 0h68.5v12.7h-27.2v66.6h-13.6V12.7H262V0ZM149 0v12.7H94v20.4h44.3v12.6H94v21h55v12.6H80.5V0h68.7zm34.3 0h-17.8l63.8 79.4h17.9l-32-39.7 32-39.6h-17.9l-23 28.6-23-28.6zm18.3 56.7-9-11-27.1 33.7h17.8l18.3-22.7z"/><path fill="#000" d="M81 79.3 17 0H0v79.3h13.6V17l50.2 62.3H81Zm252.6-.4c-1 0-1.8-.4-2.5-1s-1.1-1.6-1.1-2.6.3-1.8 1-2.5 1.6-1 2.6-1 1.8.3 2.5 1a3.4 3.4 0 0 1 .6 4.3 3.7 3.7 0 0 1-3 1.8zm23.2-33.5h6v23.3c0 2.1-.4 4-1.3 5.5a9.1 9.1 0 0 1-3.8 3.5c-1.6.8-3.5 1.3-5.7 1.3-2 0-3.7-.4-5.3-1s-2.8-1.8-3.7-3.2c-.9-1.3-1.4-3-1.4-5h6c.1.8.3 1.6.7 2.2s1 1.2 1.6 1.5c.7.4 1.5.5 2.4.5 1 0 1.8-.2 2.4-.6a4 4 0 0 0 1.6-1.8c.3-.8.5-1.8.5-3V45.5zm30.9 9.1a4.4 4.4 0 0 0-2-3.3 7.5 7.5 0 0 0-4.3-1.1c-1.3 0-2.4.2-3.3.5-.9.4-1.6 1-2 1.6a3.5 3.5 0 0 0-.3 4c.3.5.7.9 1.3 1.2l1.8 1 2 .5 3.2.8c1.3.3 2.5.7 3.7 1.2a13 13 0 0 1 3.2 1.8 8.1 8.1 0 0 1 3 6.5c0 2-.5 3.7-1.5 5.1a10 10 0 0 1-4.4 3.5c-1.8.8-4.1 1.2-6.8 1.2-2.6 0-4.9-.4-6.8-1.2-2-.8-3.4-2-4.5-3.5a10 10 0 0 1-1.7-5.6h6a5 5 0 0 0 3.5 4.6c1 .4 2.2.6 3.4.6 1.3 0 2.5-.2 3.5-.6 1-.4 1.8-1 2.4-1.7a4 4 0 0 0 .8-2.4c0-.9-.2-1.6-.7-2.2a11 11 0 0 0-2.1-1.4l-3.2-1-3.8-1c-2.8-.7-5-1.7-6.6-3.2a7.2 7.2 0 0 1-2.4-5.7 8 8 0 0 1 1.7-5 10 10 0 0 1 4.3-3.5c2-.8 4-1.2 6.4-1.2 2.3 0 4.4.4 6.2 1.2 1.8.8 3.2 2 4.3 3.4 1 1.4 1.5 3 1.5 5h-5.8z"/></svg>
+</file>
+
+<file path="public/vercel.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1155 1000"><path d="m577.3 0 577.4 1000H0z" fill="#fff"/></svg>
+</file>
+
+<file path="public/window.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.5 2.5h13v10a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1zM0 1h16v11.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 0 12.5zm3.75 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5M7 4.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m1.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5" fill="#666"/></svg>
+</file>
+
+<file path="README.md">
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+</file>
+
+<file path="src/app/body/page.tsx">
+export default function Page() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+      <h1 className="text-3xl font-black text-gray-900 mb-2 uppercase tracking-tight">
+        Feature Coming Soon
+      </h1>
+      <p className="text-gray-500 max-w-sm">
+        The Hiroshima habit tracking module is currently under development.
+      </p>
+    </div>
+  );
+}
+</file>
+
+<file path="src/app/globals.css">
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+</file>
+
+<file path="src/app/login/page.tsx">
+'use client'
+import { Auth } from '@supabase/auth-ui-react'
+import { ThemeSupa } from '@supabase/auth-ui-shared'
+import { createClient } from '@/utils/supabase/client'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+
+export default function LoginPage() {
+  const supabase = createClient()
+  const router = useRouter()
+
+  useEffect(() => {
+    // 1. Listen for changes in auth state (SIGNED_IN, SIGNED_OUT, etc.)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        router.push('/') // Redirect to homepage on success
+        router.refresh() // Refresh the sidebar to show your email
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [router, supabase])
+
+  return (
+    <div className="flex flex-col justify-center items-center min-h-[80vh] px-4">
+      <div className="w-full max-w-md p-10 bg-white rounded-[40px] shadow-2xl border border-gray-100">
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-black italic tracking-tighter">HIROSHIMA</h1>
+          <p className="text-gray-400 text-xs mt-2 uppercase tracking-widest font-bold italic">Admin Access Only</p>
+        </div>
+        
+        <Auth
+          supabaseClient={supabase}
+          view="sign_in" // 👈 Forces the view to ONLY show Login
+          showLinks={false} // 👈 Deletes "Don't have an account? Sign Up" links
+          appearance={{ 
+            theme: ThemeSupa,
+            variables: {
+              default: {
+                colors: {
+                  brand: 'black',
+                  brandAccent: '#333',
+                },
+                radii: {
+                  buttonBorderRadius: '12px',
+                  inputBorderRadius: '12px',
+                }
+              }
+            }
+          }}
+          providers={[]} 
+        />
+        
+        <p className="mt-8 text-center text-[10px] text-gray-300 uppercase tracking-widest">
+          Authorized personnel only
+        </p>
+      </div>
+    </div>
+  )
+}
+</file>
+
+<file path="src/app/mood/page.tsx">
+export default function Page() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+      <h1 className="text-3xl font-black text-gray-900 mb-2 uppercase tracking-tight">
+        Feature Coming Soon
+      </h1>
+      <p className="text-gray-500 max-w-sm">
+        The Hiroshima habit tracking module is currently under development.
+      </p>
+    </div>
+  );
+}
+</file>
+
+<file path="src/app/reading/page.tsx">
+'use client';
+import { useState, useEffect } from 'react';
+import { createClient } from '@/utils/supabase/client';
+import { Reading } from '@/types/habits';
+import ReadingForm from '@/components/habits/ReadingForm';
+import UpdateProgress from '@/components/habits/UpdateProgress';
+import ReadingStats from '@/components/habits/ReadingStats';
+// Removed ReadingList and ReadingFilter as we are simplifying to Timeline only
+import ReadingTimeline from '@/components/habits/ReadingTimeline';
+import { MOCK_READINGS } from '@/utils/mockData';
+
+export default function Page() {
+  const supabase = createClient();
+  const [readings, setReadings] = useState<Reading[]>(MOCK_READINGS);
+  const [filteredReadings, setFilteredReadings] = useState<Reading[]>(MOCK_READINGS);
+  const [loading, setLoading] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  useEffect(() => {
+    fetchReadings();
+  }, []);
+
+  const fetchReadings = async () => {
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        setReadings(MOCK_READINGS);
+        setFilteredReadings(MOCK_READINGS);
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('books')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('started_date', { ascending: false });
+
+      if (error) {
+        setReadings(MOCK_READINGS);
+        setFilteredReadings(MOCK_READINGS);
+      } else if (data) {
+        setReadings(data);
+        setFilteredReadings(data);
+      }
+    } catch (err) {
+      setReadings(MOCK_READINGS);
+      setFilteredReadings(MOCK_READINGS);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReadingAdded = (newReading: Reading) => {
+    setReadings(prev => [newReading, ...prev]);
+    setFilteredReadings(prev => [newReading, ...prev]);
+  };
+
+  const handleProgressUpdated = (updatedReading: Reading) => {
+    const updateList = (prev: Reading[]) => 
+      prev.map(r => (r.id === updatedReading.id ? updatedReading : r));
+    
+    setReadings(updateList);
+    setFilteredReadings(updateList);
+  };
+
+  return (
+    <main className="max-w-7xl mx-auto p-8 bg-gray-50 min-h-screen">
+      {/* Header */}
+      <header className="mb-8">
+        <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight text-left">Reading Journey</h1>
+        <p className="text-gray-500 text-left">Your historical reading activity log.</p>
+      </header>
+
+      {/* Stats Section */}
+      <section className="mb-8">
+        <ReadingStats readings={readings} />
+      </section>
+
+      {/* Update Progress Section - Book Album */}
+      <section className="mb-12">
+        <UpdateProgress readings={readings} onProgressUpdated={handleProgressUpdated} />
+      </section>
+
+      {/* Content Section - Simplified to only show Timeline aligned left */}
+      <section className="mt-12 flex justify-start">
+        {loading ? (
+          <div className="text-left py-12">
+            <p className="text-gray-500 italic">Loading activity feed...</p>
+          </div>
+        ) : (
+          <ReadingTimeline readings={filteredReadings} />
+        )}
+      </section>
+
+      {/* Floating Action Button for Adding Books */}
+      <ReadingForm isOpen={showAddForm} onToggle={setShowAddForm} onReadingAdded={handleReadingAdded} />
+    </main>
+  );
+}
+</file>
+
+<file path="src/app/workouts/page.tsx">
+'use client';
+import { useState, useEffect } from 'react';
+import { createClient } from '@/utils/supabase/client';
+import { Workout } from '@/types/habits';
+import WorkoutForm from '@/components/habits/WorkoutForm';
+import WorkoutStats from '@/components/habits/WorkoutStats';
+import WorkoutFilter from '@/components/habits/WorkoutFilter';
+import WorkoutList from '@/components/habits/WorkoutList';
+import WorkoutTimeline from '@/components/habits/WorkoutTimeline';
+import { MOCK_WORKOUTS } from '@/utils/mockData';
+
+export default function Page() {
+  const supabase = createClient();
+  const [workouts, setWorkouts] = useState<Workout[]>(MOCK_WORKOUTS);
+  const [filteredWorkouts, setFilteredWorkouts] = useState<Workout[]>(MOCK_WORKOUTS);
+  const [view, setView] = useState<'list' | 'timeline'>('list');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchWorkouts();
+  }, []);
+
+  const fetchWorkouts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('workouts')
+        .select('*')
+        .order('logged_date', { ascending: false });
+
+      if (error) {
+        console.log('Using mock data - Supabase not configured');
+        setWorkouts(MOCK_WORKOUTS);
+        setFilteredWorkouts(MOCK_WORKOUTS);
+      } else if (data) {
+        setWorkouts(data);
+        setFilteredWorkouts(data);
+      }
+    } catch (err) {
+      console.log('Using mock data - connection error');
+      setWorkouts(MOCK_WORKOUTS);
+      setFilteredWorkouts(MOCK_WORKOUTS);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleWorkoutAdded = (newWorkout: Workout) => {
+    setWorkouts(prev => [newWorkout, ...prev]);
+    setFilteredWorkouts(prev => [newWorkout, ...prev]);
+  };
+
+  const handleFilter = (filtered: Workout[]) => {
+    setFilteredWorkouts(filtered);
+  };
+
+  return (
+    <main className="max-w-7xl mx-auto p-8 bg-gray-50 min-h-screen">
+      {/* Header */}
+      <header className="mb-8">
+        <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Workouts</h1>
+        <p className="text-gray-500">Track your fitness journey, every step of the way.</p>
+      </header>
+
+      {/* Stats Section */}
+      <section className="mb-8">
+        <WorkoutStats workouts={workouts} />
+      </section>
+
+      {/* Add Workout Form */}
+      <section className="mb-8">
+        <WorkoutForm onWorkoutAdded={handleWorkoutAdded} />
+      </section>
+
+      {/* Filter Section */}
+      <section className="mb-8">
+        <WorkoutFilter workouts={workouts} onFilter={handleFilter} />
+      </section>
+
+      {/* View Toggle */}
+      <section className="mb-6 flex gap-3">
+        <button
+          onClick={() => setView('list')}
+          className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
+            view === 'list'
+              ? 'bg-blue-600 text-white'
+              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          List View
+        </button>
+        <button
+          onClick={() => setView('timeline')}
+          className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
+            view === 'timeline'
+              ? 'bg-blue-600 text-white'
+              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          Timeline View
+        </button>
+      </section>
+
+      {/* Content Section */}
+      <section>
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500">Loading workouts...</p>
+          </div>
+        ) : view === 'list' ? (
+          <WorkoutList workouts={filteredWorkouts} />
+        ) : (
+          <WorkoutTimeline workouts={filteredWorkouts} />
+        )}
+      </section>
+    </main>
+  );
+}
+</file>
+
+<file path="src/components/habits/BodyForm.tsx">
+'use client';
+import { useState } from 'react';
+import { createClient } from '@/utils/supabase/client';
+
+
+export default function BodyForm() {
+  const supabase = createClient();
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    
+    // Collecting data from your form fields
+    const { data, error } = await supabase
+      .from('body_tracking')
+      .insert([
+        {
+          weight_kg: parseFloat(formData.get('weight') as string),
+          waist_cm: parseFloat(formData.get('waist') as string),
+          chest_cm: parseFloat(formData.get('chest') as string),
+          thigh_cm: parseFloat(formData.get('thigh') as string),
+          logged_date: formData.get('date'),
+          // user_id is automatically handled by Supabase Auth + RLS if set up, 
+          // but we usually grab it to be safe:
+        }
+      ]);
+
+    setLoading(false);
+    if (error) alert(error.message);
+    else alert('Evolution saved successfully!');
+  };
+    
+  return (
+    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm max-w-md">
+      <h2 className="text-xl font-bold text-gray-800 mb-4">Update Body Stats</h2>
+      
+      <form className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Weight (kg)</label>
+            <input type="number" step="0.1" className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="00.0" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Waist (cm)</label>
+            <input type="number" step="0.1" className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="00.0" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Chest (cm)</label>
+            <input type="number" step="0.1" className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="00.0" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Thigh (cm)</label>
+            <input type="number" step="0.1" className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="00.0" />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Measurement Date</label>
+          <input type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full p-2 border rounded-lg" />
+        </div>
+
+        <button type="submit" className="w-full py-3 bg-black text-white rounded-xl font-bold hover:bg-gray-800 transition-colors">
+          Save Progress
+        </button>
+      </form>
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/habits/Sidebar.tsx">
+'use client' // Required because we are using hooks like useRouter
+import Link from 'next/link';
+import { createClient } from '@/utils/supabase/client';
+import { useRouter, usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+const navItems = [
+  { name: 'Overview', href: '/' },
+  { name: 'Workouts', href: '/workouts' },
+  { name: 'Reading', href: '/reading' },
+  { name: 'Body Stats', href: '/body' },
+  { name: 'Mood', href: '/mood' },
+];
+
+export default function Sidebar() {
+  const supabase = createClient();
+  const router = useRouter();
+  const pathname = usePathname(); // Helps highlight which page you are on
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setUserEmail(user.email ?? null);
+    };
+    getUser();
+  }, [supabase]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh(); // Forces Next.js to clear the cache and update the UI
+  };
+
+  return (
+    <nav className="w-64 h-screen bg-white border-r border-gray-100 p-6 flex flex-col fixed left-0 top-0 z-50">
+      <div className="mb-10">
+        <h2 className="text-2xl font-black text-black tracking-tighter italic">HIROSHIMA</h2>
+      </div>
+
+      <div className="space-y-2 flex-1">
+        {navItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link 
+              key={item.name} 
+              href={item.href}
+              className={`block px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                isActive 
+                  ? 'bg-black text-white' 
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-black'
+              }`}
+            >
+              {item.name}
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="pt-6 border-t border-gray-100 space-y-4">
+        {/* User Info Section */}
+        {userEmail && (
+          <div className="px-4">
+            <p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Logged in as</p>
+            <p className="text-xs text-gray-600 truncate font-medium">{userEmail}</p>
+          </div>
+        )}
+
+        <button 
+          onClick={handleLogout}
+          className="w-full text-left px-4 py-2 text-sm text-red-500 font-semibold hover:bg-red-50 rounded-lg transition-colors"
+        >
+          Logout
+        </button>
+      </div>
+    </nav>
+  );
+}
+</file>
+
+<file path="src/components/habits/StatCard.tsx">
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  unit?: string;
+}
+
+export default function StatCard({ title, value, unit }: StatCardProps) {
+  return (
+    <div className="p-6 bg-white border border-gray-200 rounded-xl shadow-sm">
+      <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">{title}</p>
+      <div className="mt-2 flex items-baseline">
+        <span className="text-3xl font-bold text-gray-900">{value}</span>
+        {unit && <span className="ml-1 text-gray-500">{unit}</span>}
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/types/habits.ts">
+export type MoodLevel = 'bad' | 'weird' | 'so-so' | 'happy' | 'great';
+
+export interface Workout {
+  id: string;
+  activity_type: 'running' | 'training' | 'walking' | 'swimming' | 'cycling' | 'yoga' | 'other';
+  duration_minutes: number;
+  distance_km?: number;
+  logged_date: string;
+}
+
+export interface BodyStats {
+  weight_kg: number;
+  waist_cm: number;
+  chest_cm: number;
+  thigh_cm: number;
+  logged_date: string;
+}
+
+export interface Reading {
+  id: string;
+  user_id?: string;
+  title: string;
+  author: string;
+  pages_read: number;
+  total_pages: number;
+  genre: 'fiction' | 'non-fiction' | 'science' | 'biography' | 'history' | 'self-help' | 'mystery' | 'other';
+  status: 'reading' | 'completed' | 'paused';
+  is_completed?: boolean;
+  rating?: number;
+  notes?: string;
+  started_date: string;
+  completed_date?: string;
+  cover_image_url?: string;
+  created_at?: string;
+}
+</file>
+
+<file path="src/utils/mockData.ts">
+import { Workout, MoodLevel, Reading } from '@/types/habits';
+
+export const MOCK_WORKOUTS: Workout[] = [
+  { id: '1', activity_type: 'running', duration_minutes: 30, distance_km: 5, logged_date: '2026-02-18' },
+  { id: '2', activity_type: 'swimming', duration_minutes: 45, logged_date: '2026-02-19' }
+];
+
+export const MOCK_MOODS = [
+  { mood: 'happy' as MoodLevel, entry_date: '2026-02-18' },
+  { mood: 'great' as MoodLevel, entry_date: '2026-02-19' }
+];
+
+export const MOCK_READINGS: Reading[] = [
+  { 
+    id: '1', 
+    user_id: 'user-1',
+    title: 'Atomic Habits', 
+    author: 'James Clear', 
+    pages_read: 320, 
+    total_pages: 320, 
+    genre: 'self-help', 
+    status: 'completed', 
+    is_completed: true,
+    rating: 5,
+    notes: 'Incredible book on building better habits',
+    started_date: '2026-02-01', 
+    completed_date: '2026-02-20',
+    cover_image_url: 'https://images.unsplash.com/photo-1507842217343-583f20270319?w=300&h=450&fit=crop',
+    created_at: '2026-02-01T00:00:00Z'
+  },
+  { 
+    id: '2', 
+    title: 'The Midnight Library', 
+    author: 'Matt Haig', 
+    pages_read: 156, 
+    total_pages: 304, 
+    genre: 'fiction', 
+    status: 'reading',
+    notes: 'Great story exploring alternate lives',
+    started_date: '2026-02-15',
+    cover_image_url: 'https://images.unsplash.com/photo-1532438527205-9f3da6c5f5d6?w=300&h=450&fit=crop'
+  },
+  { 
+    id: '3', 
+    title: 'Educated', 
+    author: 'Tara Westover', 
+    pages_read: 334, 
+    total_pages: 334, 
+    genre: 'biography', 
+    status: 'completed', 
+    rating: 4,
+    notes: 'Moving autobiography about education and family',
+    started_date: '2026-01-20', 
+    completed_date: '2026-02-10',
+    cover_image_url: 'https://images.unsplash.com/photo-1516979187457-635ffe35fbf0?w=300&h=450&fit=crop'
+  },
+  { 
+    id: '4', 
+    title: 'Deep Work', 
+    author: 'Cal Newport', 
+    pages_read: 296, 
+    total_pages: 296, 
+    genre: 'self-help', 
+    status: 'completed', 
+    rating: 5,
+    notes: 'Eye-opening insights on focused work',
+    started_date: '2026-01-10', 
+    completed_date: '2026-02-05',
+    cover_image_url: 'https://images.unsplash.com/photo-1507842217343-583f20270319?w=300&h=450&fit=crop'
+  },
+  { 
+    id: '5', 
+    title: 'The Seven Husbands of Evelyn Hugo', 
+    author: 'Taylor Jenkins Reid', 
+    pages_read: 432, 
+    total_pages: 432, 
+    genre: 'fiction', 
+    status: 'completed', 
+    rating: 5,
+    notes: 'Unputdownable tale of Old Hollywood and secrets',
+    started_date: '2025-12-15', 
+    completed_date: '2026-02-08',
+    cover_image_url: 'https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?w=300&h=450&fit=crop'
+  },
+  { 
+    id: '6', 
+    user_id: 'user-1',
+    title: 'Sapiens', 
+    author: 'Yuval Noah Harari', 
+    pages_read: 289, 
+    total_pages: 498, 
+    genre: 'history', 
+    status: 'reading',
+    is_completed: false,
+    notes: 'Fascinating journey through human history',
+    started_date: '2026-02-10',
+    created_at: '2026-02-10T00:00:00Z'
+  },
+  { 
+    id: '7', 
+    title: 'Becoming', 
+    author: 'Michelle Obama', 
+    pages_read: 656, 
+    total_pages: 656, 
+    genre: 'biography', 
+    status: 'completed', 
+    rating: 4,
+    notes: 'Inspiring memoir of resilience and purpose',
+    started_date: '2026-01-05', 
+    completed_date: '2026-02-18',
+    cover_image_url: 'https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?w=300&h=450&fit=crop'
+  },
+  { 
+    id: '8', 
+    title: 'The Lean Startup', 
+    author: 'Eric Ries', 
+    pages_read: 507, 
+    total_pages: 507, 
+    genre: 'non-fiction', 
+    status: 'completed', 
+    rating: 4,
+    notes: 'Revolutionary approach to business',
+    started_date: '2025-12-01', 
+    completed_date: '2026-01-25'
+  },
+  { 
+    id: '9', 
+    title: 'Dune', 
+    author: 'Frank Herbert', 
+    pages_read: 245, 
+    total_pages: 688, 
+    genre: 'science', 
+    status: 'reading',
+    notes: 'Epic science fiction masterpiece',
+    started_date: '2026-02-08'
+  },
+  { 
+    id: '10', 
+    title: 'The Girl on the Train', 
+    author: 'Paula Hawkins', 
+    pages_read: 423, 
+    total_pages: 423, 
+    genre: 'mystery', 
+    status: 'completed', 
+    rating: 4,
+    notes: 'Gripping psychological thriller',
+    started_date: '2026-01-15', 
+    completed_date: '2026-02-03'
+  },
+  { 
+    id: '11', 
+    title: 'Thinking, Fast and Slow', 
+    author: 'Daniel Kahneman', 
+    pages_read: 512, 
+    total_pages: 512, 
+    genre: 'non-fiction', 
+    status: 'completed', 
+    rating: 5,
+    notes: 'Deep dive into human cognition',
+    started_date: '2025-11-20', 
+    completed_date: '2026-01-30'
+  },
+  { 
+    id: '12', 
+    title: 'The Alchemist', 
+    author: 'Paulo Coelho', 
+    pages_read: 224, 
+    total_pages: 224, 
+    genre: 'fiction', 
+    status: 'completed', 
+    rating: 4,
+    notes: 'Philosophical journey of self-discovery',
+    started_date: '2026-01-08', 
+    completed_date: '2026-01-22'
+  },
+  { 
+    id: '13', 
+    title: 'Steve Jobs', 
+    author: 'Walter Isaacson', 
+    pages_read: 571, 
+    total_pages: 571, 
+    genre: 'biography', 
+    status: 'completed', 
+    rating: 5,
+    notes: 'Fascinating biography of the Apple founder',
+    started_date: '2025-10-15', 
+    completed_date: '2026-01-20'
+  },
+  { 
+    id: '14', 
+    title: 'The Silent Patient', 
+    author: 'Alex Michaelides', 
+    pages_read: 336, 
+    total_pages: 336, 
+    genre: 'mystery', 
+    status: 'completed', 
+    rating: 5,
+    notes: 'Mind-bending psychological thriller',
+    started_date: '2025-12-28', 
+    completed_date: '2026-02-15'
+  },
+  { 
+    id: '15', 
+    title: 'Outlander', 
+    author: 'Diana Gabaldon', 
+    pages_read: 189, 
+    total_pages: 645, 
+    genre: 'fiction', 
+    status: 'reading',
+    notes: 'Epic time-traveling adventure',
+    started_date: '2026-02-12'
+  },
+  { 
+    id: '16', 
+    title: 'Man\'s Search for Meaning', 
+    author: 'Viktor Frankl', 
+    pages_read: 165, 
+    total_pages: 165, 
+    genre: 'self-help', 
+    status: 'completed', 
+    rating: 5,
+    notes: 'Profound reflections on finding purpose',
+    started_date: '2026-01-30', 
+    completed_date: '2026-02-14'
+  },
+  { 
+    id: '17', 
+    title: 'The Nightingale', 
+    author: 'Kristin Hannah', 
+    pages_read: 456, 
+    total_pages: 456, 
+    genre: 'fiction', 
+    status: 'completed', 
+    rating: 4,
+    notes: 'WWII historical fiction',
+    started_date: '2025-11-05', 
+    completed_date: '2026-01-28'
+  },
+  { 
+    id: '18', 
+    title: 'Range', 
+    author: 'David Epstein', 
+    pages_read: 123, 
+    total_pages: 544, 
+    genre: 'non-fiction', 
+    status: 'reading',
+    notes: 'Why generalists triumph over specialists',
+    started_date: '2026-02-18'
+  },
+  { 
+    id: '19', 
+    title: 'The Book Thief', 
+    author: 'Markus Zusak', 
+    pages_read: 552, 
+    total_pages: 552, 
+    genre: 'fiction', 
+    status: 'completed', 
+    rating: 5,
+    notes: 'Beautiful WWII narrative told by Death',
+    started_date: '2025-10-22', 
+    completed_date: '2026-01-15'
+  },
+  { 
+    id: '20', 
+    title: 'Bad Blood', 
+    author: 'John Carreyrou', 
+    pages_read: 476, 
+    total_pages: 476, 
+    genre: 'non-fiction', 
+    status: 'completed', 
+    rating: 5,
+    notes: 'True story of fraud at Theranos',
+    started_date: '2025-12-10', 
+    completed_date: '2026-02-02'
+  },
+  { 
+    id: '21', 
+    title: 'We Need to Talk About Kevin', 
+    author: 'Lionel Shriver', 
+    pages_read: 378, 
+    total_pages: 378, 
+    genre: 'fiction', 
+    status: 'completed', 
+    rating: 4,
+    notes: 'Dark psychological novel',
+    started_date: '2025-11-18', 
+    completed_date: '2026-01-05'
+  },
+  { 
+    id: '22', 
+    title: 'The Midnight Library', 
+    author: 'Matt Haig', 
+    pages_read: 265, 
+    total_pages: 304, 
+    genre: 'fiction', 
+    status: 'reading',
+    notes: 'What if you could see all the paths you could have taken?',
+    started_date: '2026-02-10'
+  }
+];
+</file>
+
+<file path="src/utils/supabase/client.ts">
+import { createBrowserClient } from '@supabase/ssr'
+
+// Make sure 'export' is written here!
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
+</file>
+
+<file path="tsconfig.json">
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}
+</file>
+
+<file path="package.json">
+{
+  "name": "hiroshima",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@supabase/auth-ui-react": "^0.4.7",
+    "@supabase/auth-ui-shared": "^0.1.8",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.97.0",
+    "clsx": "^2.1.1",
+    "next": "16.1.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "tailwind-merge": "^3.5.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "babel-plugin-react-compiler": "1.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "shadcn-ui": "^0.9.5",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
+</file>
+
+<file path="src/app/layout.tsx">
+import Sidebar from '@/components/habits/Sidebar';
+import './globals.css';
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body className="bg-gray-50">
+        <Sidebar />
+        <main className="ml-64 p-8"> {/* ml-64 pushes content to the right of Sidebar */}
+          {children}
+        </main>
+      </body>
+    </html>
+  );
+}
+</file>
+
+<file path="src/app/page.tsx">
+import StatCard from '@/components/habits/StatCard';
+import BodyForm from '@/components/habits/BodyForm';
+import { MOCK_WORKOUTS } from '@/utils/mockData';
+
+export default function Home() {
+  // Logic: Calculate total minutes from mock data
+  const totalMinutes = MOCK_WORKOUTS.reduce((acc, curr) => acc + curr.duration_minutes, 0);
+
+  return (
+    <main className="max-w-7xl mx-auto p-8 bg-gray-50 min-h-screen">
+      <header className="mb-8">
+        <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Hiroshima Dashboard</h1>
+        <p className="text-gray-500">Track your evolution, day by day.</p>
+      </header>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard title="Total Training" value={totalMinutes} unit="mins" />
+        <StatCard title="Avg Mood" value="Great" />
+        <StatCard title="Books Read" value={0} />
+      <div className='mt-8'> <BodyForm /> 
+      </div>
+      </div>
+    </main>
+  );
+}
+</file>
+
+</files>
