@@ -12,7 +12,7 @@ export default function BodyForm() {
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    
+
     // Collecting data from your form fields
     const { data, error } = await supabase
       .from('body_tracking')
@@ -32,40 +32,40 @@ export default function BodyForm() {
     if (error) alert(error.message);
     else alert('Evolution saved successfully!');
   };
-    
+
   return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm max-w-md">
-      <h2 className="text-xl font-bold text-gray-800 mb-4">Update Body Stats</h2>
-      
+    <div className="bg-surface p-6 rounded-2xl border border-dark-border shadow-sm max-w-md">
+      <h2 className="text-xl font-bold text-foreground mb-4">Update Body Stats</h2>
+
       <form className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Weight (kg)</label>
-            <input type="number" step="0.1" className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="00.0" />
+            <label className="block text-xs font-semibold text-muted uppercase mb-1">Weight (kg)</label>
+            <input type="number" step="0.1" className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg focus:ring-2 focus:ring-accent-blue outline-none text-foreground placeholder:text-muted/50" placeholder="00.0" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Waist (cm)</label>
-            <input type="number" step="0.1" className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="00.0" />
+            <label className="block text-xs font-semibold text-muted uppercase mb-1">Waist (cm)</label>
+            <input type="number" step="0.1" className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg focus:ring-2 focus:ring-accent-blue outline-none text-foreground placeholder:text-muted/50" placeholder="00.0" />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Chest (cm)</label>
-            <input type="number" step="0.1" className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="00.0" />
+            <label className="block text-xs font-semibold text-muted uppercase mb-1">Chest (cm)</label>
+            <input type="number" step="0.1" className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg focus:ring-2 focus:ring-accent-blue outline-none text-foreground placeholder:text-muted/50" placeholder="00.0" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Thigh (cm)</label>
-            <input type="number" step="0.1" className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="00.0" />
+            <label className="block text-xs font-semibold text-muted uppercase mb-1">Thigh (cm)</label>
+            <input type="number" step="0.1" className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg focus:ring-2 focus:ring-accent-blue outline-none text-foreground placeholder:text-muted/50" placeholder="00.0" />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Measurement Date</label>
-          <input type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full p-2 border rounded-lg" />
+          <label className="block text-xs font-semibold text-muted uppercase mb-1">Measurement Date</label>
+          <input type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg text-foreground" />
         </div>
 
-        <button type="submit" className="w-full py-3 bg-black text-white rounded-xl font-bold hover:bg-gray-800 transition-colors">
+        <button type="submit" className="w-full py-3 bg-accent-blue text-white rounded-xl font-bold hover:bg-accent-blue/80 transition-colors">
           Save Progress
         </button>
       </form>

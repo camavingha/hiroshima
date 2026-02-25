@@ -57,16 +57,16 @@ export default function WorkoutFilter({ workouts, onFilter }: WorkoutFilterProps
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-      <h3 className="text-lg font-bold text-gray-800 mb-4">Filter Workouts</h3>
+    <div className="bg-surface p-6 rounded-2xl border border-dark-border shadow-sm">
+      <h3 className="text-lg font-bold text-foreground mb-4">Filter Workouts</h3>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Activity Type</label>
+          <label className="block text-xs font-semibold text-muted uppercase mb-2">Activity Type</label>
           <select
             value={selectedType}
             onChange={handleTypeChange}
-            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg focus:ring-2 focus:ring-accent-blue outline-none text-foreground"
           >
             <option value="all">All Activities</option>
             <option value="running">Running</option>
@@ -80,29 +80,29 @@ export default function WorkoutFilter({ workouts, onFilter }: WorkoutFilterProps
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">From Date</label>
+          <label className="block text-xs font-semibold text-muted uppercase mb-2">From Date</label>
           <input
             type="date"
             value={dateRange.start}
             onChange={handleStartDateChange}
-            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg focus:ring-2 focus:ring-accent-blue outline-none text-foreground"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">To Date</label>
+          <label className="block text-xs font-semibold text-muted uppercase mb-2">To Date</label>
           <input
             type="date"
             value={dateRange.end}
             onChange={handleEndDateChange}
-            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg focus:ring-2 focus:ring-accent-blue outline-none text-foreground"
           />
         </div>
 
         <div className="flex items-end">
           <button
             onClick={handleReset}
-            className="w-full py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+            className="w-full py-2 px-4 bg-dark-border text-foreground rounded-lg hover:bg-dark-border-light transition-colors font-medium"
           >
             Reset
           </button>

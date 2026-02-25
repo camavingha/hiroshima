@@ -8,7 +8,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-gray-50">
+      <body className="bg-background text-foreground">
         <Sidebar />
         <main className="ml-64 p-8"> {/* ml-64 pushes content to the right of Sidebar */}
           {children}

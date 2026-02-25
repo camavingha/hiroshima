@@ -49,41 +49,41 @@ export default function ReadingForm({ onReadingAdded, isOpen = false, onToggle }
     }
   };
 
-const uploadImage = async (file: File, bookTitle: string): Promise<string | null> => {
-  try {
-    setUploading(true);
-    
-    // 1. Get the original file extension (e.g., .png, .jpg, .jpeg)
-    const fileExt = file.name.split('.').pop();
-    const timestamp = Date.now();
-    // 2. Create a clean filename using the actual extension
-    const fileName = `${timestamp}-${bookTitle.replace(/\s+/g, '-')}.${fileExt}`;
-    
-    const { data, error } = await supabase.storage
-      .from('book-covers')
-      .upload(`public/${fileName}`, file, {
-        cacheControl: '3600',
-        upsert: false,
-        contentType: file.type, // 3. Set the correct MIME type (image/png, etc.)
-      });
+  const uploadImage = async (file: File, bookTitle: string): Promise<string | null> => {
+    try {
+      setUploading(true);
 
-    if (error) {
-      console.error('Upload error:', error);
+      // 1. Get the original file extension (e.g., .png, .jpg, .jpeg)
+      const fileExt = file.name.split('.').pop();
+      const timestamp = Date.now();
+      // 2. Create a clean filename using the actual extension
+      const fileName = `${timestamp}-${bookTitle.replace(/\s+/g, '-')}.${fileExt}`;
+
+      const { data, error } = await supabase.storage
+        .from('book-covers')
+        .upload(`public/${fileName}`, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type, // 3. Set the correct MIME type (image/png, etc.)
+        });
+
+      if (error) {
+        console.error('Upload error:', error);
+        return null;
+      }
+
+      const { data: publicData } = supabase.storage
+        .from('book-covers')
+        .getPublicUrl(`public/${fileName}`);
+
+      return publicData?.publicUrl || null;
+    } catch (err) {
+      console.error('Upload failed:', err);
       return null;
+    } finally {
+      setUploading(false);
     }
-
-    const { data: publicData } = supabase.storage
-      .from('book-covers')
-      .getPublicUrl(`public/${fileName}`);
-
-    return publicData?.publicUrl || null;
-  } catch (err) {
-    console.error('Upload failed:', err);
-    return null;
-  } finally {
-    setUploading(false);
-  }
-};
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -92,7 +92,7 @@ const uploadImage = async (file: File, bookTitle: string): Promise<string | null
     try {
       // Get current user
       const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
+
       if (authError || !user) {
         alert('Error: Could not get user. Please log in.');
         return;
@@ -160,20 +160,20 @@ const uploadImage = async (file: File, bookTitle: string): Promise<string | null
       {/* Floating Action Button */}
       <button
         onClick={() => onToggle?.(!isOpen)}
-        className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-full flex items-center justify-center text-3xl font-bold hover:shadow-xl hover:scale-110 transition-all transform z-50"
+        className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-br from-accent-purple to-purple-700 text-white rounded-full flex items-center justify-center text-3xl font-bold hover:shadow-xl hover:shadow-accent-purple/20 hover:scale-110 transition-all transform z-50"
       >
         <span className={`transform transition-transform duration-300 ${isOpen ? 'rotate-45' : ''}`}>+</span>
       </button>
 
       {/* Modal Overlay & Form */}
       {isOpen && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => onToggle?.(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white border-b border-gray-100 p-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">Add New Book</h2>
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => onToggle?.(false)}>
+          <div className="bg-surface rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-dark-border" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-surface border-b border-dark-border p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-foreground">Add New Book</h2>
               <button
                 onClick={() => onToggle?.(false)}
-                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg transition-colors"
+                className="w-8 h-8 flex items-center justify-center hover:bg-surface-hover rounded-lg transition-colors text-muted"
               >
                 ✕
               </button>
@@ -182,10 +182,10 @@ const uploadImage = async (file: File, bookTitle: string): Promise<string | null
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {/* Book Cover Upload */}
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Book Cover (optional)</label>
+                <label className="block text-xs font-semibold text-muted uppercase mb-2">Book Cover (optional)</label>
                 <div className="flex gap-4">
                   <div className="flex-1">
-                    <div className="relative border-2 border-dashed border-purple-300 rounded-lg p-4 text-center hover:border-purple-500 transition-colors cursor-pointer">
+                    <div className="relative border-2 border-dashed border-accent-purple/40 rounded-lg p-4 text-center hover:border-accent-purple/70 transition-colors cursor-pointer">
                       <input
                         type="file"
                         accept="image/*"
@@ -196,9 +196,9 @@ const uploadImage = async (file: File, bookTitle: string): Promise<string | null
                       />
                       <label htmlFor="cover-upload" className="cursor-pointer">
                         {imagePreview ? (
-                          <div className="text-sm text-green-600 font-semibold">✓ Image selected</div>
+                          <div className="text-sm text-accent-green font-semibold">✓ Image selected</div>
                         ) : (
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-muted">
                             <div className="text-2xl mb-1">📸</div>
                             <p>Click to upload cover image</p>
                           </div>
@@ -207,7 +207,7 @@ const uploadImage = async (file: File, bookTitle: string): Promise<string | null
                     </div>
                   </div>
                   {imagePreview && (
-                    <div className="w-24 h-32 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+                    <div className="w-24 h-32 rounded-lg overflow-hidden border border-dark-border shadow-sm">
                       <img src={imagePreview} alt="Cover preview" className="w-full h-full object-cover" />
                     </div>
                   )}
@@ -216,27 +216,27 @@ const uploadImage = async (file: File, bookTitle: string): Promise<string | null
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Title</label>
+                  <label className="block text-xs font-semibold text-muted uppercase mb-2">Title</label>
                   <input
                     type="text"
                     name="title"
                     value={formData.title}
                     onChange={handleChange}
                     required
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                    className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg focus:ring-2 focus:ring-accent-purple outline-none text-foreground placeholder:text-muted/50"
                     placeholder="Book title"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Author</label>
+                  <label className="block text-xs font-semibold text-muted uppercase mb-2">Author</label>
                   <input
                     type="text"
                     name="author"
                     value={formData.author}
                     onChange={handleChange}
                     required
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                    className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg focus:ring-2 focus:ring-accent-purple outline-none text-foreground placeholder:text-muted/50"
                     placeholder="Author name"
                   />
                 </div>
@@ -244,12 +244,12 @@ const uploadImage = async (file: File, bookTitle: string): Promise<string | null
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Genre</label>
+                  <label className="block text-xs font-semibold text-muted uppercase mb-2">Genre</label>
                   <select
                     name="genre"
                     value={formData.genre}
                     onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                    className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg focus:ring-2 focus:ring-accent-purple outline-none text-foreground"
                   >
                     <option value="fiction">Fiction</option>
                     <option value="non-fiction">Non-Fiction</option>
@@ -263,12 +263,12 @@ const uploadImage = async (file: File, bookTitle: string): Promise<string | null
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Status</label>
+                  <label className="block text-xs font-semibold text-muted uppercase mb-2">Status</label>
                   <select
                     name="status"
                     value={formData.status}
                     onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                    className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg focus:ring-2 focus:ring-accent-purple outline-none text-foreground"
                   >
                     <option value="reading">Reading</option>
                     <option value="completed">Completed</option>
@@ -277,12 +277,12 @@ const uploadImage = async (file: File, bookTitle: string): Promise<string | null
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Rating (optional)</label>
+                  <label className="block text-xs font-semibold text-muted uppercase mb-2">Rating (optional)</label>
                   <select
                     name="rating"
                     value={formData.rating}
                     onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                    className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg focus:ring-2 focus:ring-accent-purple outline-none text-foreground"
                   >
                     <option value="">Not rated</option>
                     <option value="1">⭐ 1 Star</option>
@@ -296,7 +296,7 @@ const uploadImage = async (file: File, bookTitle: string): Promise<string | null
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Total Pages</label>
+                  <label className="block text-xs font-semibold text-muted uppercase mb-2">Total Pages</label>
                   <input
                     type="number"
                     name="total_pages"
@@ -304,13 +304,13 @@ const uploadImage = async (file: File, bookTitle: string): Promise<string | null
                     onChange={handleChange}
                     required
                     min="1"
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                    className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg focus:ring-2 focus:ring-accent-purple outline-none text-foreground placeholder:text-muted/50"
                     placeholder="300"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Pages Read</label>
+                  <label className="block text-xs font-semibold text-muted uppercase mb-2">Pages Read</label>
                   <input
                     type="number"
                     name="pages_read"
@@ -318,43 +318,43 @@ const uploadImage = async (file: File, bookTitle: string): Promise<string | null
                     onChange={handleChange}
                     required
                     min="0"
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                    className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg focus:ring-2 focus:ring-accent-purple outline-none text-foreground placeholder:text-muted/50"
                     placeholder="100"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Start Date</label>
+                  <label className="block text-xs font-semibold text-muted uppercase mb-2">Start Date</label>
                   <input
                     type="date"
                     name="started_date"
                     value={formData.started_date}
                     onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                    className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg focus:ring-2 focus:ring-accent-purple outline-none text-foreground"
                   />
                 </div>
               </div>
 
               {formData.status === 'completed' && (
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Completion Date</label>
+                  <label className="block text-xs font-semibold text-muted uppercase mb-2">Completion Date</label>
                   <input
                     type="date"
                     name="completed_date"
                     value={formData.completed_date}
                     onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                    className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg focus:ring-2 focus:ring-accent-purple outline-none text-foreground"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Notes (optional)</label>
+                <label className="block text-xs font-semibold text-muted uppercase mb-2">Notes (optional)</label>
                 <textarea
                   name="notes"
                   value={formData.notes}
                   onChange={handleChange}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none resize-none"
+                  className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg focus:ring-2 focus:ring-accent-purple outline-none resize-none text-foreground placeholder:text-muted/50"
                   placeholder="Your thoughts on this book..."
                   rows={3}
                 />
@@ -363,7 +363,7 @@ const uploadImage = async (file: File, bookTitle: string): Promise<string | null
               <button
                 type="submit"
                 disabled={loading || uploading}
-                className="w-full py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors disabled:bg-gray-400"
+                className="w-full py-3 bg-accent-purple text-white rounded-xl font-bold hover:bg-accent-purple/80 transition-colors disabled:bg-dark-border"
               >
                 {loading || uploading ? (uploading ? 'Uploading image...' : 'Adding...') : 'Add Book'}
               </button>

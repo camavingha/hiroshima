@@ -1,5 +1,13 @@
 export type MoodLevel = 'bad' | 'weird' | 'so-so' | 'happy' | 'great';
 
+export interface Mood {
+  id: string;
+  user_id?: string;
+  mood: MoodLevel;
+  notes?: string;
+  entry_date: string;
+}
+
 export interface Workout {
   id: string;
   activity_type: 'running' | 'training' | 'walking' | 'swimming' | 'cycling' | 'yoga' | 'other';

@@ -7,10 +7,10 @@ export default function Home() {
   const totalMinutes = MOCK_WORKOUTS.reduce((acc, curr) => acc + curr.duration_minutes, 0);
 
   return (
-    <main className="max-w-7xl mx-auto p-8 bg-gray-50 min-h-screen">
+    <main className="max-w-7xl mx-auto p-8 bg-background min-h-screen">
       <header className="mb-8">
-        <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Hiroshima Dashboard</h1>
-        <p className="text-gray-500">Track your evolution, day by day.</p>
+        <h1 className="text-4xl font-extrabold text-foreground tracking-tight">Hiroshima Dashboard</h1>
+        <p className="text-muted">Track your evolution, day by day.</p>
       </header>
 
       {/* Stats Grid */}
@@ -18,8 +18,8 @@ export default function Home() {
         <StatCard title="Total Training" value={totalMinutes} unit="mins" />
         <StatCard title="Avg Mood" value="Great" />
         <StatCard title="Books Read" value={0} />
-      <div className='mt-8'> <BodyForm /> 
-      </div>
+        <div className='mt-8'> <BodyForm />
+        </div>
       </div>
     </main>
   );

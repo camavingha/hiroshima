@@ -33,23 +33,22 @@ export default function Sidebar() {
   };
 
   return (
-    <nav className="w-64 h-screen bg-white border-r border-gray-100 p-6 flex flex-col fixed left-0 top-0 z-50">
+    <nav className="w-64 h-screen bg-surface border-r border-dark-border p-6 flex flex-col fixed left-0 top-0 z-50">
       <div className="mb-10">
-        <h2 className="text-2xl font-black text-black tracking-tighter italic">HIROSHIMA</h2>
+        <h2 className="text-2xl font-black text-foreground tracking-tighter italic">HIROSHIMA</h2>
       </div>
 
       <div className="space-y-2 flex-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
-            <Link 
-              key={item.name} 
+            <Link
+              key={item.name}
               href={item.href}
-              className={`block px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-                isActive 
-                  ? 'bg-black text-white' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-black'
-              }`}
+              className={`block px-4 py-2 text-sm font-medium rounded-lg transition-all ${isActive
+                  ? 'bg-active text-white'
+                  : 'text-muted hover:bg-surface-hover hover:text-foreground'
+                }`}
             >
               {item.name}
             </Link>
@@ -57,18 +56,18 @@ export default function Sidebar() {
         })}
       </div>
 
-      <div className="pt-6 border-t border-gray-100 space-y-4">
+      <div className="pt-6 border-t border-dark-border space-y-4">
         {/* User Info Section */}
         {userEmail && (
           <div className="px-4">
-            <p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Logged in as</p>
-            <p className="text-xs text-gray-600 truncate font-medium">{userEmail}</p>
+            <p className="text-[10px] uppercase font-bold text-muted tracking-widest">Logged in as</p>
+            <p className="text-xs text-foreground/70 truncate font-medium">{userEmail}</p>
           </div>
         )}
 
-        <button 
+        <button
           onClick={handleLogout}
-          className="w-full text-left px-4 py-2 text-sm text-red-500 font-semibold hover:bg-red-50 rounded-lg transition-colors"
+          className="w-full text-left px-4 py-2 text-sm text-accent-red font-semibold hover:bg-surface-hover rounded-lg transition-colors"
         >
           Logout
         </button>

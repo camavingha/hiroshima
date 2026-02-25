@@ -17,8 +17,8 @@ const activityEmojis: Record<Workout['activity_type'], string> = {
 export default function WorkoutTimeline({ workouts }: WorkoutTimelineProps) {
   if (workouts.length === 0) {
     return (
-      <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm text-center">
-        <p className="text-gray-500">No workouts to display</p>
+      <div className="bg-surface p-8 rounded-2xl border border-dark-border shadow-sm text-center">
+        <p className="text-muted">No workouts to display</p>
       </div>
     );
   }
@@ -42,20 +42,20 @@ export default function WorkoutTimeline({ workouts }: WorkoutTimelineProps) {
   }, {} as Record<string, Workout[]>);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div className="p-6 border-b border-gray-100">
-        <h3 className="text-lg font-bold text-gray-800">Workout Timeline</h3>
+    <div className="bg-surface rounded-2xl border border-dark-border shadow-sm overflow-hidden">
+      <div className="p-6 border-b border-dark-border">
+        <h3 className="text-lg font-bold text-foreground">Workout Timeline</h3>
       </div>
 
       <div className="relative">
         {Object.entries(grouped).map(([date, dayWorkouts], index) => (
-          <div key={date} className="border-b border-gray-100 last:border-b-0">
+          <div key={date} className="border-b border-dark-border last:border-b-0">
             <div className="p-6">
               {/* Date Header */}
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                <h4 className="font-semibold text-gray-700">{date}</h4>
-                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                <div className="w-2 h-2 bg-accent-blue rounded-full"></div>
+                <h4 className="font-semibold text-foreground/80">{date}</h4>
+                <span className="text-xs bg-[#264f78] text-blue-300 px-2 py-1 rounded-full">
                   {dayWorkouts.length} {dayWorkouts.length === 1 ? 'workout' : 'workouts'}
                 </span>
               </div>
@@ -65,15 +65,15 @@ export default function WorkoutTimeline({ workouts }: WorkoutTimelineProps) {
                 {dayWorkouts.map(workout => (
                   <div
                     key={workout.id}
-                    className="p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg flex items-center justify-between"
+                    className="p-3 bg-gradient-to-r from-surface-hover to-surface rounded-lg flex items-center justify-between"
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{activityEmojis[workout.activity_type]}</span>
                       <div>
-                        <p className="font-medium text-gray-900 capitalize">
+                        <p className="font-medium text-foreground capitalize">
                           {workout.activity_type.replace('-', ' ')}
                         </p>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-muted">
                           {workout.duration_minutes} mins
                           {workout.distance_km && ` • ${workout.distance_km} km`}
                         </p>

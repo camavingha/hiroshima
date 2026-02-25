@@ -63,18 +63,18 @@ export default function WorkoutForm({ onWorkoutAdded }: WorkoutFormProps) {
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-      <h2 className="text-xl font-bold text-gray-800 mb-4">Log Workout</h2>
+    <div className="bg-surface p-6 rounded-2xl border border-dark-border shadow-sm">
+      <h2 className="text-xl font-bold text-foreground mb-4">Log Workout</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Activity Type</label>
+            <label className="block text-xs font-semibold text-muted uppercase mb-2">Activity Type</label>
             <select
               name="activity_type"
               value={formData.activity_type}
               onChange={handleChange}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg focus:ring-2 focus:ring-accent-blue outline-none text-foreground"
             >
               <option value="running">Running</option>
               <option value="training">Training</option>
@@ -87,7 +87,7 @@ export default function WorkoutForm({ onWorkoutAdded }: WorkoutFormProps) {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Duration (minutes)</label>
+            <label className="block text-xs font-semibold text-muted uppercase mb-2">Duration (minutes)</label>
             <input
               type="number"
               name="duration_minutes"
@@ -95,7 +95,7 @@ export default function WorkoutForm({ onWorkoutAdded }: WorkoutFormProps) {
               onChange={handleChange}
               required
               min="1"
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg focus:ring-2 focus:ring-accent-blue outline-none text-foreground placeholder:text-muted/50"
               placeholder="30"
             />
           </div>
@@ -103,26 +103,26 @@ export default function WorkoutForm({ onWorkoutAdded }: WorkoutFormProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Distance (km, optional)</label>
+            <label className="block text-xs font-semibold text-muted uppercase mb-2">Distance (km, optional)</label>
             <input
               type="number"
               name="distance_km"
               value={formData.distance_km}
               onChange={handleChange}
               step="0.1"
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg focus:ring-2 focus:ring-accent-blue outline-none text-foreground placeholder:text-muted/50"
               placeholder="5.0"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Date</label>
+            <label className="block text-xs font-semibold text-muted uppercase mb-2">Date</label>
             <input
               type="date"
               name="logged_date"
               value={formData.logged_date}
               onChange={handleChange}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full p-2 bg-input-bg border border-dark-border-light rounded-lg focus:ring-2 focus:ring-accent-blue outline-none text-foreground"
             />
           </div>
         </div>
@@ -130,7 +130,7 @@ export default function WorkoutForm({ onWorkoutAdded }: WorkoutFormProps) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+          className="w-full py-3 bg-accent-blue text-white rounded-xl font-bold hover:bg-accent-blue/80 transition-colors disabled:bg-dark-border"
         >
           {loading ? 'Logging...' : 'Log Workout'}
         </button>

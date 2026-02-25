@@ -23,23 +23,30 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col justify-center items-center min-h-[80vh] px-4">
-      <div className="w-full max-w-md p-10 bg-white rounded-[40px] shadow-2xl border border-gray-100">
+      <div className="w-full max-w-md p-10 bg-surface rounded-[40px] shadow-2xl border border-dark-border">
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-black italic tracking-tighter">HIROSHIMA</h1>
-          <p className="text-gray-400 text-xs mt-2 uppercase tracking-widest font-bold italic">Admin Access Only</p>
+          <h1 className="text-4xl font-black italic tracking-tighter text-foreground">HIROSHIMA</h1>
+          <p className="text-muted text-xs mt-2 uppercase tracking-widest font-bold italic">Admin Access Only</p>
         </div>
-        
+
         <Auth
           supabaseClient={supabase}
           view="sign_in" // 👈 Forces the view to ONLY show Login
           showLinks={false} // 👈 Deletes "Don't have an account? Sign Up" links
-          appearance={{ 
+          appearance={{
             theme: ThemeSupa,
             variables: {
               default: {
                 colors: {
-                  brand: 'black',
-                  brandAccent: '#333',
+                  brand: '#569cd6',
+                  brandAccent: '#4e8dc2',
+                  inputBackground: '#3c3c3c',
+                  inputBorder: '#474747',
+                  inputText: '#d4d4d4',
+                  inputPlaceholder: '#808080',
+                  inputLabelText: '#808080',
+                  defaultButtonBackground: '#569cd6',
+                  defaultButtonText: '#ffffff',
                 },
                 radii: {
                   buttonBorderRadius: '12px',
@@ -48,10 +55,10 @@ export default function LoginPage() {
               }
             }
           }}
-          providers={[]} 
+          providers={[]}
         />
-        
-        <p className="mt-8 text-center text-[10px] text-gray-300 uppercase tracking-widest">
+
+        <p className="mt-8 text-center text-[10px] text-muted/50 uppercase tracking-widest">
           Authorized personnel only
         </p>
       </div>
