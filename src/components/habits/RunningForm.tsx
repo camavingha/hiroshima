@@ -44,11 +44,22 @@ export default function RunningForm({ onWorkoutAdded, isOpen = false, onToggle }
         setLoading(true);
 
         try {
+            // 1. Get the current authenticated user to satisfy the user_id constraint
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+            if (authError || !user) {
+                alert('Error: You must be logged in to log a run.');
+                setLoading(false);
+                return;
+            }
+
             const newWorkout = {
+                user_id: user.id, // Add the user_id to the payload
                 activity_type: 'running' as const,
                 duration_minutes: parseInt(formData.duration_minutes),
                 distance_km: formData.distance_km ? parseFloat(formData.distance_km) : undefined,
                 logged_date: formData.logged_date,
+                notes: formData.notes || undefined,
             };
 
             const { data, error } = await supabase
