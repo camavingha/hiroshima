@@ -4,7 +4,8 @@ import { createClient } from '@/utils/supabase/client';
 import { Workout } from '@/types/habits';
 import RunningForm from '@/components/habits/RunningForm';
 import WorkoutTimeline from '@/components/habits/WorkoutTimeline';
-import PaceChart from '@/components/habits/PaceChart';  
+// import PaceChart from '@/components/habits/PerformanceChart';
+import PerformanceChart from '@/components/habits/PerformanceChart';  
 
 // Calculate running streak from consecutive dates
 function calcStreak(workouts: Workout[]): number {
@@ -86,7 +87,7 @@ export default function Page() {
     <main className="min-h-screen bg-background p-8 flex flex-col items-center">
       <div className="w-full max-w-5xl space-y-12">
         
-        <header className="text-center">
+        <header className="text-left">
           <h1 className="text-4xl font-extrabold text-foreground tracking-tight italic uppercase">Hiroshima Running</h1>
           <p className="text-muted text-[10px] font-bold uppercase tracking-[0.3em] mt-2">Live Database Connection Active</p>
         </header>
@@ -98,7 +99,7 @@ export default function Page() {
                <p className="text-muted font-black uppercase tracking-widest text-xs">Syncing Performance Data...</p>
             </div>
           ) : (
-            <PaceChart workouts={workouts} />
+            <PerformanceChart workouts={workouts} />
           )}
         </section>
 
