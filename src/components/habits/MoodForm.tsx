@@ -10,11 +10,11 @@ interface MoodFormProps {
 }
 
 const moodOptions: { level: MoodLevel; emoji: string; label: string; color: string }[] = [
-    { level: 'great', emoji: '😄', label: 'Great', color: 'bg-green-500 hover:bg-green-400 ring-green-400/30' },
-    { level: 'happy', emoji: '🙂', label: 'Happy', color: 'bg-green-600/70 hover:bg-green-500/70 ring-green-500/30' },
-    { level: 'so-so', emoji: '😐', label: 'So-so', color: 'bg-yellow-500/70 hover:bg-yellow-400/70 ring-yellow-400/30' },
-    { level: 'weird', emoji: '😕', label: 'Weird', color: 'bg-orange-500/70 hover:bg-orange-400/70 ring-orange-400/30' },
-    { level: 'bad', emoji: '😞', label: 'Bad', color: 'bg-red-500/70 hover:bg-red-400/70 ring-red-400/30' },
+    { level: 'great', emoji: '🤩', label: 'Great', color: 'bg-green-500 ring-green-400/30' },
+    { level: 'happy', emoji: '😊', label: 'Happy', color: 'bg-green-600/70 ring-green-500/30' },
+    { level: 'so-so', emoji: '😐', label: 'So-so', color: 'bg-yellow-500/70 ring-yellow-400/30' },
+    { level: 'weird', emoji: '🫠', label: 'Weird', color: 'bg-orange-500/70 ring-orange-400/30' },
+    { level: 'bad', emoji: '😞', label: 'Bad', color: 'bg-red-500/70 ring-red-400/30' },
 ];
 
 export default function MoodForm({ onMoodAdded, isOpen = false, onToggle }: MoodFormProps) {
@@ -34,12 +34,12 @@ export default function MoodForm({ onMoodAdded, isOpen = false, onToggle }: Mood
             const newMood = {
                 user_id: user?.id,
                 mood: selectedMood,
-                notes: notes || undefined,
+                notes: notes.trim() || null, // Ensure empty strings are sent as null
                 entry_date: entryDate,
             };
 
             const { data, error } = await supabase
-                .from('moods')
+                .from('daily_moods') // Target correct table
                 .insert([newMood])
                 .select()
                 .single();
@@ -64,7 +64,6 @@ export default function MoodForm({ onMoodAdded, isOpen = false, onToggle }: Mood
 
     return (
         <>
-            {/* Floating Action Button */}
             <button
                 onClick={() => onToggle?.(!isOpen)}
                 className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-br from-accent-green to-green-700 text-white rounded-full flex items-center justify-center text-3xl font-bold hover:shadow-xl hover:shadow-accent-green/20 hover:scale-110 transition-all transform z-50"
@@ -72,11 +71,9 @@ export default function MoodForm({ onMoodAdded, isOpen = false, onToggle }: Mood
                 <span className={`transform transition-transform duration-300 ${isOpen ? 'rotate-45' : ''}`}>+</span>
             </button>
 
-            {/* Modal */}
             {isOpen && (
                 <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => onToggle?.(false)}>
                     <div className="bg-surface rounded-[40px] shadow-2xl w-full max-w-md overflow-hidden border border-dark-border animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
-                        {/* Header */}
                         <div className="relative p-8 bg-gradient-to-br from-accent-green to-green-700 text-center">
                             <button
                                 onClick={() => onToggle?.(false)}
@@ -93,7 +90,6 @@ export default function MoodForm({ onMoodAdded, isOpen = false, onToggle }: Mood
                             </p>
                         </div>
 
-                        {/* Mood Selector */}
                         <div className="p-8 space-y-6">
                             <div className="flex justify-center gap-3">
                                 {moodOptions.map(opt => (
@@ -111,7 +107,6 @@ export default function MoodForm({ onMoodAdded, isOpen = false, onToggle }: Mood
                                 ))}
                             </div>
 
-                            {/* Date */}
                             <div>
                                 <label className="block text-xs font-semibold text-muted uppercase mb-2">Date</label>
                                 <input
@@ -122,7 +117,6 @@ export default function MoodForm({ onMoodAdded, isOpen = false, onToggle }: Mood
                                 />
                             </div>
 
-                            {/* Notes */}
                             <div>
                                 <label className="block text-xs font-semibold text-muted uppercase mb-2">Notes (optional)</label>
                                 <textarea
@@ -134,7 +128,6 @@ export default function MoodForm({ onMoodAdded, isOpen = false, onToggle }: Mood
                                 />
                             </div>
 
-                            {/* Submit */}
                             <button
                                 onClick={handleSubmit}
                                 disabled={loading || !selectedMood}

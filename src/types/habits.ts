@@ -41,3 +41,20 @@ export interface Reading {
   cover_image_url?: string;
   created_at?: string;
 }
+
+// src/types/habits.ts
+
+export interface BodyStats {
+  id?: string;
+  user_id?: string;
+  weight_kg: number;
+  body_water_kg: number;
+  fat_mass_kg: number;
+  bone_mineral_kg: number;
+  protein_mass_kg: number;
+  muscle_mass_kg: number;
+  bmr_kcal: number;
+  body_type: string;
+  logged_date: string;
+  created_at?: string;
+}

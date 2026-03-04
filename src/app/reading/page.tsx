@@ -65,8 +65,8 @@ export default function Page() {
       <div className="w-full max-w-5xl space-y-12">
         
         {/* Header */}
-        <header className="text-center">
-          <h1 className="text-4xl font-extrabold text-foreground tracking-tight italic uppercase">Reading Journey</h1>
+        <header className="text-left">
+          <h1 className="text-4xl font-extrabold text-foreground tracking-tight italic uppercase">Hiroshima Collection</h1>
           <p className="text-muted text-[10px] font-bold uppercase tracking-[0.3em] mt-2">Live Neural Library Link</p>
         </header>
 

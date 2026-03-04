@@ -88,3 +88,14 @@ select option {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #569cd6; /* var(--accent-blue) */
 }
+
+/* Add this to src/app/globals.css */
+@keyframes scanline {
+  from { background-position: 0 0; }
+  to { background-position: 0 100%; }
+}
+
+/* Ensure Tailwind picks it up */
+.animate-scanline {
+  animation: scanline 8s linear infinite;
+}

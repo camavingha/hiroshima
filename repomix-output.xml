@@ -64,6 +64,7 @@ src/components/habits/BodyForm.tsx
 src/components/habits/CircularProgress.tsx
 src/components/habits/MoodCalendar.tsx
 src/components/habits/MoodForm.tsx
+src/components/habits/PerformanceChart.tsx
 src/components/habits/ReadingFilter.tsx
 src/components/habits/ReadingForm.tsx
 src/components/habits/ReadingList.tsx
@@ -481,11 +482,11 @@ interface MoodFormProps {
 }
 
 const moodOptions: { level: MoodLevel; emoji: string; label: string; color: string }[] = [
-    { level: 'great', emoji: '😄', label: 'Great', color: 'bg-green-500 hover:bg-green-400 ring-green-400/30' },
-    { level: 'happy', emoji: '🙂', label: 'Happy', color: 'bg-green-600/70 hover:bg-green-500/70 ring-green-500/30' },
-    { level: 'so-so', emoji: '😐', label: 'So-so', color: 'bg-yellow-500/70 hover:bg-yellow-400/70 ring-yellow-400/30' },
-    { level: 'weird', emoji: '😕', label: 'Weird', color: 'bg-orange-500/70 hover:bg-orange-400/70 ring-orange-400/30' },
-    { level: 'bad', emoji: '😞', label: 'Bad', color: 'bg-red-500/70 hover:bg-red-400/70 ring-red-400/30' },
+    { level: 'great', emoji: '🤩', label: 'Great', color: 'bg-green-500 ring-green-400/30' },
+    { level: 'happy', emoji: '😊', label: 'Happy', color: 'bg-green-600/70 ring-green-500/30' },
+    { level: 'so-so', emoji: '😐', label: 'So-so', color: 'bg-yellow-500/70 ring-yellow-400/30' },
+    { level: 'weird', emoji: '🫠', label: 'Weird', color: 'bg-orange-500/70 ring-orange-400/30' },
+    { level: 'bad', emoji: '😞', label: 'Bad', color: 'bg-red-500/70 ring-red-400/30' },
 ];
 
 export default function MoodForm({ onMoodAdded, isOpen = false, onToggle }: MoodFormProps) {
@@ -505,12 +506,12 @@ export default function MoodForm({ onMoodAdded, isOpen = false, onToggle }: Mood
             const newMood = {
                 user_id: user?.id,
                 mood: selectedMood,
-                notes: notes || undefined,
+                notes: notes.trim() || null, // Ensure empty strings are sent as null
                 entry_date: entryDate,
             };
 
             const { data, error } = await supabase
-                .from('moods')
+                .from('daily_moods') // Target correct table
                 .insert([newMood])
                 .select()
                 .single();
@@ -535,7 +536,6 @@ export default function MoodForm({ onMoodAdded, isOpen = false, onToggle }: Mood
 
     return (
         <>
-            {/* Floating Action Button */}
             <button
                 onClick={() => onToggle?.(!isOpen)}
                 className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-br from-accent-green to-green-700 text-white rounded-full flex items-center justify-center text-3xl font-bold hover:shadow-xl hover:shadow-accent-green/20 hover:scale-110 transition-all transform z-50"
@@ -543,11 +543,9 @@ export default function MoodForm({ onMoodAdded, isOpen = false, onToggle }: Mood
                 <span className={`transform transition-transform duration-300 ${isOpen ? 'rotate-45' : ''}`}>+</span>
             </button>
 
-            {/* Modal */}
             {isOpen && (
                 <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => onToggle?.(false)}>
                     <div className="bg-surface rounded-[40px] shadow-2xl w-full max-w-md overflow-hidden border border-dark-border animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
-                        {/* Header */}
                         <div className="relative p-8 bg-gradient-to-br from-accent-green to-green-700 text-center">
                             <button
                                 onClick={() => onToggle?.(false)}
@@ -564,7 +562,6 @@ export default function MoodForm({ onMoodAdded, isOpen = false, onToggle }: Mood
                             </p>
                         </div>
 
-                        {/* Mood Selector */}
                         <div className="p-8 space-y-6">
                             <div className="flex justify-center gap-3">
                                 {moodOptions.map(opt => (
@@ -582,7 +579,6 @@ export default function MoodForm({ onMoodAdded, isOpen = false, onToggle }: Mood
                                 ))}
                             </div>
 
-                            {/* Date */}
                             <div>
                                 <label className="block text-xs font-semibold text-muted uppercase mb-2">Date</label>
                                 <input
@@ -593,7 +589,6 @@ export default function MoodForm({ onMoodAdded, isOpen = false, onToggle }: Mood
                                 />
                             </div>
 
-                            {/* Notes */}
                             <div>
                                 <label className="block text-xs font-semibold text-muted uppercase mb-2">Notes (optional)</label>
                                 <textarea
@@ -605,7 +600,6 @@ export default function MoodForm({ onMoodAdded, isOpen = false, onToggle }: Mood
                                 />
                             </div>
 
-                            {/* Submit */}
                             <button
                                 onClick={handleSubmit}
                                 disabled={loading || !selectedMood}
@@ -622,184 +616,259 @@ export default function MoodForm({ onMoodAdded, isOpen = false, onToggle }: Mood
 }
 </file>
 
-<file path="src/components/habits/RunningForm.tsx">
+<file path="src/components/habits/PerformanceChart.tsx">
 'use client';
-import { useState } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { useState, useEffect } from 'react';
 import { Workout } from '@/types/habits';
 
-interface RunningFormProps {
-    onWorkoutAdded?: (workout: Workout) => void;
-    isOpen?: boolean;
-    onToggle?: (open: boolean) => void;
+interface PerformanceChartProps {
+  workouts: Workout[];
 }
 
-export default function RunningForm({ onWorkoutAdded, isOpen = false, onToggle }: RunningFormProps) {
-    const supabase = createClient();
-    const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState({
-        duration_minutes: '',
-        distance_km: '',
-        logged_date: new Date().toISOString().split('T')[0],
-        notes: '',
+type ViewMode = 'pace' | 'distance' | 'overall';
+
+export default function PerformanceChart({ workouts }: PerformanceChartProps) {
+  const [viewMode, setViewMode] = useState<ViewMode>('pace');
+  const [hoveredPoint, setHoveredPoint] = useState<any | null>(null);
+  const [isAnimate, setIsAnimate] = useState(false);
+
+  useEffect(() => {
+    setIsAnimate(false);
+    const timer = setTimeout(() => setIsAnimate(true), 50);
+    return () => clearTimeout(timer);
+  }, [viewMode]);
+
+  const chartData = workouts
+    .filter(w => w.activity_type === 'running' && w.distance_km && w.distance_km > 0)
+    .sort((a, b) => new Date(a.logged_date).getTime() - new Date(b.logged_date).getTime())
+    .map(w => {
+      const paceDecimal = w.duration_minutes / (w.distance_km || 1);
+      const paceMin = Math.floor(paceDecimal);
+      const paceSec = Math.round((paceDecimal - paceMin) * 60);
+      return {
+        date: new Date(w.logged_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        fullDate: new Date(w.logged_date).toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric' }),
+        pace: paceDecimal,
+        paceStr: `${paceMin}:${paceSec.toString().padStart(2, '0')}`,
+        distance: w.distance_km || 0
+      };
     });
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value,
-        }));
-    };
+  if (chartData.length < 2) return null;
 
-    // Calculate pace (min/km) from duration and distance
-    const calcPace = () => {
-        const dur = parseFloat(formData.duration_minutes);
-        const dist = parseFloat(formData.distance_km);
-        if (dur && dist && dist > 0) {
-            const paceMin = Math.floor(dur / dist);
-            const paceSec = Math.round(((dur / dist) - paceMin) * 60);
-            return `${paceMin}:${paceSec.toString().padStart(2, '0')}`;
-        }
-        return '--:--';
-    };
+  const width = 800;
+  const height = 300;
+  const paddingX = 70;
+  const paddingY = 40;
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setLoading(true);
+  const maxPace = Math.ceil(Math.max(...chartData.map(d => d.pace)) + 0.5);
+  const minPace = Math.floor(Math.min(...chartData.map(d => d.pace)) - 0.5);
+  const maxDist = Math.ceil(Math.max(...chartData.map(d => d.distance)) + 1);
+  const minDist = Math.floor(Math.min(...chartData.map(d => d.distance)) - 1);
 
-        try {
-            const newWorkout = {
-                activity_type: 'running' as const,
-                duration_minutes: parseInt(formData.duration_minutes),
-                distance_km: formData.distance_km ? parseFloat(formData.distance_km) : undefined,
-                logged_date: formData.logged_date,
-            };
+  const getX = (index: number) => (index / (chartData.length - 1)) * (width - paddingX * 2) + paddingX;
+  const getY = (val: number, min: number, max: number) => height - paddingY - ((val - min) / (max - min)) * (height - paddingY * 2);
 
-            const { data, error } = await supabase
-                .from('workouts')
-                .insert([newWorkout])
-                .select()
-                .single();
+  const pacePoints = chartData.map((d, i) => `${getX(i)},${getY(d.pace, minPace, maxPace)}`).join(' ');
+  const distPoints = chartData.map((d, i) => `${getX(i)},${getY(d.distance, minDist, maxDist)}`).join(' ');
 
-            if (error) {
-                alert(`Error: ${error.message}`);
-            } else {
-                alert('Run logged successfully! 🏃');
-                onWorkoutAdded?.(data);
-                onToggle?.(false);
-                setFormData({
-                    duration_minutes: '',
-                    distance_km: '',
-                    logged_date: new Date().toISOString().split('T')[0],
-                    notes: '',
-                });
-            }
-        } catch (err) {
-            alert('Failed to log run');
-        } finally {
-            setLoading(false);
-        }
-    };
+  return (
+    <div className="bg-surface rounded-[32px] border border-dark-border shadow-2xl overflow-hidden p-8 mb-8 relative">
+      
+      {/* View Switcher */}
+      <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <div className="relative">
+          <h2 className="text-2xl font-black text-foreground tracking-tight italic uppercase text-accent-purple">
+            Performance Analysis
+          </h2>
+          <p className="text-muted text-[10px] font-bold uppercase tracking-[0.2em]">Neural metrics visualization</p>
+        </div>
 
-    const pace = calcPace();
-
-    return (
-        <>
-            {/* Floating Action Button */}
+        <nav className="flex bg-background p-1 rounded-2xl border border-dark-border">
+          {(['pace', 'distance', 'overall'] as ViewMode[]).map((mode) => (
             <button
-                onClick={() => onToggle?.(!isOpen)}
-                className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-br from-accent-blue to-blue-700 text-white rounded-full flex items-center justify-center text-3xl font-bold hover:shadow-xl hover:shadow-accent-blue/20 hover:scale-110 transition-all transform z-50"
+              key={mode}
+              onClick={() => setViewMode(mode)}
+              className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
+                viewMode === mode ? 'bg-active text-white shadow-lg' : 'text-muted hover:text-foreground'
+              }`}
             >
-                <span className={`transform transition-transform duration-300 ${isOpen ? 'rotate-45' : ''}`}>+</span>
+              {mode}
             </button>
+          ))}
+        </nav>
+      </div>
 
-            {/* Modal Overlay & Form */}
-            {isOpen && (
-                <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => onToggle?.(false)}>
-                    <div className="bg-surface rounded-[40px] shadow-2xl w-full max-w-md overflow-hidden border border-dark-border animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
-                        {/* Header */}
-                        <div className="relative p-8 bg-accent-blue flex items-center gap-4">
-                            <button
-                                onClick={() => onToggle?.(false)}
-                                className="absolute top-6 right-6 w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center transition-all"
-                            >
-                                <span className="text-xl">✕</span>
-                            </button>
+      <div className="relative w-full">
+        <svg 
+          viewBox={`0 0 ${width} ${height}`} 
+          className="w-full h-auto overflow-visible"
+          onMouseLeave={() => setHoveredPoint(null)}
+        >
+          <defs>
+            <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over" /></filter>
+            
+            <linearGradient id="paceGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#c586c0" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="#c586c0" stopOpacity="0" />
+            </linearGradient>
+            <linearGradient id="distGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#569cd6" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="#569cd6" stopOpacity="0" />
+            </linearGradient>
 
-                            <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
-                                <span className="text-3xl">🏃</span>
-                            </div>
-                            <div className="text-white pr-8">
-                                <h4 className="text-xl font-black leading-tight uppercase tracking-tight">Log Run</h4>
-                                <p className="text-white/70 text-xs font-bold uppercase tracking-widest">Track your progress</p>
-                            </div>
-                        </div>
+            <style>{`
+              @keyframes radar {
+                0% { transform: translateX(${paddingX}px); opacity: 0; }
+                10% { opacity: 1; }
+                90% { opacity: 1; }
+                100% { transform: translateX(${width - paddingX}px); opacity: 0; }
+              }
+              .radar-line {
+                animation: radar 4s linear infinite;
+              }
+              .draw-line {
+                stroke-dasharray: 2000;
+                stroke-dashoffset: ${isAnimate ? '0' : '2000'};
+                transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+              }
+            `}</style>
+          </defs>
 
-                        {/* Form Content */}
-                        <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                            {/* Live Pace Display */}
-                            <div className="bg-background rounded-3xl p-6 border border-dark-border text-center">
-                                <p className="text-[9px] font-black text-muted uppercase tracking-[0.15em] mb-2">Estimated Pace</p>
-                                <p className="text-4xl font-black text-accent-blue">{pace}</p>
-                                <p className="text-[10px] text-muted uppercase tracking-wider mt-1">min / km</p>
-                            </div>
+          {/* Radar Scan Line */}
+          <line 
+            x1="0" y1={paddingY} x2="0" y2={height - paddingY} 
+            stroke={viewMode === 'distance' ? "rgba(86, 156, 214, 0.3)" : "rgba(197, 134, 192, 0.3)"} 
+            strokeWidth="2" 
+            className="radar-line" filter="url(#glow)"
+          />
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-semibold text-muted uppercase mb-2">Distance (km)</label>
-                                    <input
-                                        type="number"
-                                        name="distance_km"
-                                        value={formData.distance_km}
-                                        onChange={handleChange}
-                                        required
-                                        step="0.01"
-                                        min="0.1"
-                                        className="w-full p-3 bg-input-bg border border-dark-border-light rounded-xl focus:ring-2 focus:ring-accent-blue outline-none text-foreground text-lg font-bold text-center placeholder:text-muted/50"
-                                        placeholder="5.00"
-                                    />
-                                </div>
+          {/* LEFT Y-AXIS (Max, Mid, Min) */}
+          <g>
+            {[
+              viewMode === 'distance' ? maxDist : maxPace,
+              viewMode === 'distance' ? (minDist + maxDist) / 2 : (minPace + maxPace) / 2,
+              viewMode === 'distance' ? minDist : minPace
+            ].map((val, i) => {
+              const labelColor = viewMode === 'distance' ? '#569cd6' : '#c586c0';
+              const yPos = getY(
+                val, 
+                viewMode === 'distance' ? minDist : minPace, 
+                viewMode === 'distance' ? maxDist : maxPace
+              );
+              
+              return (
+                <text
+                  key={`left-y-${i}`}
+                  x={paddingX - 15}
+                  y={yPos + 4}
+                  textAnchor="end"
+                  className="text-[10px] font-black"
+                  style={{ fill: labelColor }}
+                >
+                  {viewMode === 'distance' ? `${val.toFixed(1)}km` : val.toFixed(1)}
+                </text>
+              );
+            })}
+          </g>
 
-                                <div>
-                                    <label className="block text-xs font-semibold text-muted uppercase mb-2">Duration (min)</label>
-                                    <input
-                                        type="number"
-                                        name="duration_minutes"
-                                        value={formData.duration_minutes}
-                                        onChange={handleChange}
-                                        required
-                                        min="1"
-                                        className="w-full p-3 bg-input-bg border border-dark-border-light rounded-xl focus:ring-2 focus:ring-accent-blue outline-none text-foreground text-lg font-bold text-center placeholder:text-muted/50"
-                                        placeholder="30"
-                                    />
-                                </div>
-                            </div>
+          {/* RIGHT Y-AXIS (Overall mode only) */}
+          {viewMode === 'overall' && (
+            <g>
+              {[maxDist, (minDist + maxDist) / 2, minDist].map((val, i) => (
+                <text
+                  key={`right-y-${i}`}
+                  x={width - paddingX + 15}
+                  y={getY(val, minDist, maxDist) + 4}
+                  textAnchor="start"
+                  className="fill-accent-blue text-[10px] font-black"
+                >
+                  {val.toFixed(1)}km
+                </text>
+              ))}
+            </g>
+          )}
 
-                            <div>
-                                <label className="block text-xs font-semibold text-muted uppercase mb-2">Date</label>
-                                <input
-                                    type="date"
-                                    name="logged_date"
-                                    value={formData.logged_date}
-                                    onChange={handleChange}
-                                    className="w-full p-3 bg-input-bg border border-dark-border-light rounded-xl focus:ring-2 focus:ring-accent-blue outline-none text-foreground"
-                                />
-                            </div>
+          {/* PACE PLOT */}
+          {(viewMode === 'pace' || viewMode === 'overall') && (
+            <g opacity={isAnimate ? 1 : 0} className="transition-opacity duration-1000">
+              <polyline points={`${getX(0)},${height-paddingY} ${pacePoints} ${getX(chartData.length-1)},${height-paddingY}`} fill="url(#paceGrad)" />
+              <polyline fill="none" stroke="#c586c0" strokeWidth="3" points={pacePoints} filter="url(#glow)" className="draw-line" />
+            </g>
+          )}
 
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full py-5 bg-accent-blue text-white rounded-[24px] font-black text-lg hover:bg-accent-blue/80 transition-all shadow-xl shadow-accent-blue/10 disabled:bg-dark-border"
-                            >
-                                {loading ? 'LOGGING...' : 'LOG RUN 🏃'}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            )}
-        </>
-    );
+          {/* DISTANCE PLOT */}
+          {(viewMode === 'distance' || viewMode === 'overall') && (
+            <g opacity={isAnimate ? 1 : 0} className="transition-opacity duration-1000">
+              <polyline points={`${getX(0)},${height-paddingY} ${distPoints} ${getX(chartData.length-1)},${height-paddingY}`} fill="url(#distGrad)" />
+              <polyline fill="none" stroke="#569cd6" strokeWidth="3" points={distPoints} filter="url(#glow)" className="draw-line" />
+            </g>
+          )}
+
+          {/* NODES */}
+          {chartData.map((d, i) => {
+             const paceY = getY(d.pace, minPace, maxPace);
+             const distY = getY(d.distance, minDist, maxDist);
+
+             return (
+              <g key={i}>
+                {/* PACE POINT */}
+                {(viewMode === 'pace' || viewMode === 'overall') && (
+                  <circle cx={getX(i)} cy={paceY} r="4" fill="#c586c0" filter="url(#glow)" />
+                )}
+                {/* DISTANCE POINT */}
+                {(viewMode === 'distance' || viewMode === 'overall') && (
+                  <circle cx={getX(i)} cy={distY} r="4" fill="#569cd6" filter="url(#glow)" />
+                )}
+
+                {hoveredPoint?.data === d && (
+                  <line x1={getX(i)} y1={paddingY} x2={getX(i)} y2={height-paddingY} stroke="rgba(255,255,255,0.15)" strokeWidth="1" strokeDasharray="4,2" />
+                )}
+
+                <rect 
+                  x={getX(i) - 20} y={0} width="40" height={height} 
+                  fill="transparent" className="cursor-crosshair"
+                  onMouseEnter={() => setHoveredPoint({ x: getX(i), paceY, distY, data: d })}
+                />
+              </g>
+             );
+          })}
+        </svg>
+
+        {/* TOOLTIP */}
+        {hoveredPoint && (
+          <div 
+            className="absolute z-50 pointer-events-none animate-in fade-in zoom-in duration-200"
+            style={{ 
+              left: `${(hoveredPoint.x / width) * 100}%`, 
+              top: `20%`,
+              transform: 'translateX(-50%)' 
+            }}
+          >
+            <div className="bg-[#1e1e1e]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl border-l-4 border-l-accent-purple min-w-[160px]">
+               <div className="text-[10px] font-black text-muted uppercase tracking-widest mb-3 border-b border-white/5 pb-1 flex justify-between">
+                <span>{hoveredPoint.data.date}</span>
+                <span className="text-accent-purple animate-pulse">LIVE_SYNC</span>
+               </div>
+               <div className="space-y-3">
+                 <div className="flex justify-between items-center">
+                    <span className="text-[9px] text-muted uppercase font-bold">Velocity</span>
+                    <span className="text-base font-black text-accent-purple italic">{hoveredPoint.data.paceStr}<span className="text-[10px] ml-1">/km</span></span>
+                 </div>
+                 <div className="flex justify-between items-center">
+                    <span className="text-[9px] text-muted uppercase font-bold">Range</span>
+                    <span className="text-base font-black text-accent-blue italic">{hoveredPoint.data.distance}<span className="text-[10px] ml-1">km</span></span>
+                 </div>
+               </div>
+               <div className="mt-3 pt-2 border-t border-white/5">
+                  <p className="text-[8px] text-muted uppercase font-bold text-center">Neural Sync Established</p>
+               </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 </file>
 
@@ -944,46 +1013,22 @@ import { createClient } from '@/utils/supabase/client';
 import { Mood, MoodLevel } from '@/types/habits';
 import MoodCalendar from '@/components/habits/MoodCalendar';
 import MoodForm from '@/components/habits/MoodForm';
-import { MOCK_MOODS } from '@/utils/mockData';
 
 const moodEmojis: Record<MoodLevel, string> = {
-  'great': '😄',
-  'happy': '🙂',
+  'great': '🤩',
+  'happy': '😊',
   'so-so': '😐',
-  'weird': '😕',
+  'weird': '🫠',
   'bad': '😞',
 };
 
 const moodScores: Record<MoodLevel, number> = {
-  'great': 5,
-  'happy': 4,
-  'so-so': 3,
-  'weird': 2,
-  'bad': 1,
+  'great': 5, 'happy': 4, 'so-so': 3, 'weird': 2, 'bad': 1,
 };
-
-// Calculate mood streak (consecutive days with any entry)
-function calcMoodStreak(moods: Mood[]): number {
-  const dates = [...new Set(moods.map(m => m.entry_date))].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-  if (dates.length === 0) return 0;
-
-  let streak = 1;
-  for (let i = 0; i < dates.length - 1; i++) {
-    const current = new Date(dates[i]);
-    const next = new Date(dates[i + 1]);
-    const diffDays = (current.getTime() - next.getTime()) / (1000 * 60 * 60 * 24);
-    if (diffDays === 1) {
-      streak++;
-    } else {
-      break;
-    }
-  }
-  return streak;
-}
 
 export default function Page() {
   const supabase = createClient();
-  const [moods, setMoods] = useState<Mood[]>(MOCK_MOODS);
+  const [moods, setMoods] = useState<Mood[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -993,26 +1038,19 @@ export default function Page() {
 
   const fetchMoods = async () => {
     try {
+      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setMoods(MOCK_MOODS);
-        setLoading(false);
-        return;
-      }
+      if (!user) return;
 
       const { data, error } = await supabase
-        .from('moods')
+        .from('daily_moods') // Target correct table
         .select('*')
         .eq('user_id', user.id)
         .order('entry_date', { ascending: false });
 
-      if (error) {
-        setMoods(MOCK_MOODS);
-      } else if (data) {
-        setMoods(data);
-      }
-    } catch {
-      setMoods(MOCK_MOODS);
+      if (data) setMoods(data);
+    } catch (err) {
+      console.error("Failed to sync neural mood link", err);
     } finally {
       setLoading(false);
     }
@@ -1022,169 +1060,98 @@ export default function Page() {
     setMoods(prev => [newMood, ...prev]);
   };
 
-  // Stats
   const totalEntries = moods.length;
-  const moodStreak = calcMoodStreak(moods);
-  const avgScore = totalEntries > 0
-    ? (moods.reduce((acc, m) => acc + moodScores[m.mood], 0) / totalEntries)
-    : 0;
-
-  // Mood distribution
-  const distribution = moods.reduce((acc, m) => {
-    acc[m.mood] = (acc[m.mood] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  // Most frequent mood
-  const topMood = Object.entries(distribution).sort((a, b) => b[1] - a[1])[0];
-  const topMoodLevel = topMood ? topMood[0] as MoodLevel : null;
-
-  // Recent entries (last 7)
-  const sortedMoods = [...moods].sort((a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime());
-  const recentMoods = sortedMoods.slice(0, 7);
+  const avgScore = totalEntries > 0 
+    ? (moods.reduce((acc, m) => acc + moodScores[m.mood], 0) / totalEntries).toFixed(1) 
+    : '0.0';
 
   return (
-    <main className="max-w-7xl mx-auto p-8 bg-background min-h-screen">
-      {/* Header */}
-      <header className="mb-8">
-        <h1 className="text-4xl font-extrabold text-foreground tracking-tight">Mood</h1>
-        <p className="text-muted">Understand your emotional patterns.</p>
-      </header>
+    <main className="min-h-screen bg-background p-8 flex flex-col items-center">
+      <div className="w-full max-w-5xl space-y-12">
+        <header className="text-center">
+          <h1 className="text-4xl font-extrabold text-foreground tracking-tight italic uppercase">Emotional Frequency</h1>
+          <p className="text-muted text-[10px] font-bold uppercase tracking-[0.3em] mt-2">Neural Sentiment Analysis</p>
+        </header>
 
-      {/* Stats */}
-      <section className="mb-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-br from-[#1a3a2a] to-[#152e22] p-6 rounded-xl border border-[#2d5a3f] relative overflow-hidden">
-            <div className="absolute top-3 right-3 text-3xl opacity-30">📝</div>
-            <p className="text-[10px] font-black text-green-400 uppercase tracking-[0.15em] mb-1">Check-in Streak</p>
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-black text-green-300">{moodStreak}</span>
-              <span className="text-sm text-green-500 font-bold">{moodStreak === 1 ? 'day' : 'days'}</span>
+        <section className="grid grid-cols-2 md:grid-cols-3 gap-6">
+            <div className="bg-surface p-6 rounded-[32px] border border-dark-border text-center">
+                <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-2">Avg Frequency</p>
+                <p className="text-4xl font-black text-accent-green">{avgScore}</p>
             </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-[#1e3a5f] to-[#1a2d47] p-6 rounded-xl border border-[#264f78]">
-            <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.15em] mb-1">Total Entries</p>
-            <span className="text-3xl font-black text-blue-300">{totalEntries}</span>
-          </div>
-
-          <div className="bg-gradient-to-br from-[#3d3a1a] to-[#352f15] p-6 rounded-xl border border-[#5a5320]">
-            <p className="text-[10px] font-black text-yellow-400 uppercase tracking-[0.15em] mb-1">Avg Score</p>
-            <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-black text-yellow-300">{avgScore.toFixed(1)}</span>
-              <span className="text-sm text-yellow-500">/5</span>
+            <div className="bg-surface p-6 rounded-[32px] border border-dark-border text-center">
+                <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-2">Total Logs</p>
+                <p className="text-4xl font-black text-accent-blue">{totalEntries}</p>
             </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-[#2d1f3d] to-[#231735] p-6 rounded-xl border border-[#4a2d6b]">
-            <p className="text-[10px] font-black text-purple-400 uppercase tracking-[0.15em] mb-1">Top Mood</p>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl">{topMoodLevel ? moodEmojis[topMoodLevel] : '—'}</span>
-              <span className="text-lg font-black text-purple-300 capitalize">{topMoodLevel || 'N/A'}</span>
+            <div className="bg-surface p-6 rounded-[32px] border border-dark-border text-center hidden md:block">
+                <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-2">System Status</p>
+                <p className="text-xl font-black text-foreground animate-pulse mt-2">ONLINE</p>
             </div>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Contribution Calendar */}
-      <section className="mb-12">
-        {loading ? (
-          <div className="text-left py-12">
-            <p className="text-muted italic">Loading mood data...</p>
-          </div>
-        ) : (
-          <MoodCalendar moods={moods} />
-        )}
-      </section>
+        <section>
+          {loading ? (
+            <div className="h-64 flex items-center justify-center animate-pulse italic text-muted">Scanning Emotional Map...</div>
+          ) : (
+            <MoodCalendar moods={moods} />
+          )}
+        </section>
 
-      {/* Recent Entries */}
-      <section>
-        <div className="bg-surface rounded-[32px] border border-dark-border shadow-sm overflow-hidden">
-          <div className="p-8 border-b border-dark-border">
-            <h2 className="text-2xl font-black text-foreground tracking-tight italic">RECENT CHECK-INS</h2>
-            <p className="text-muted text-[10px] font-bold uppercase tracking-[0.2em]">Your latest mood entries</p>
-          </div>
-
-          <div className="divide-y divide-dark-border">
-            {recentMoods.map(mood => {
-              const date = new Date(mood.entry_date);
-              const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-              const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-              return (
-                <div key={mood.id} className="px-8 py-5 flex items-center gap-6 hover:bg-surface-hover transition-colors">
-                  {/* Date */}
-                  <div className="w-16 text-center flex-shrink-0">
-                    <p className="text-[10px] font-black text-muted uppercase">{dayName}</p>
-                    <p className="text-sm font-bold text-foreground">{dateStr}</p>
-                  </div>
-
-                  {/* Emoji */}
-                  <div className="text-3xl">{moodEmojis[mood.mood]}</div>
-
-                  {/* Mood label & notes */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-black text-foreground capitalize text-sm">{mood.mood}</p>
-                    {mood.notes && (
-                      <p className="text-xs text-muted truncate">{mood.notes}</p>
-                    )}
-                  </div>
-
-                  {/* Score badge */}
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black text-white ${moodScores[mood.mood] >= 4 ? 'bg-green-500/70' :
-                      moodScores[mood.mood] === 3 ? 'bg-yellow-500/70' :
-                        'bg-red-500/70'
-                    }`}>
-                    {moodScores[mood.mood]}
-                  </div>
+        <section className="bg-surface rounded-[32px] border border-dark-border overflow-hidden flex flex-col">
+            <div className="p-8 border-b border-dark-border flex justify-between items-center bg-surface">
+                <div>
+                    <h2 className="text-2xl font-black text-foreground tracking-tight italic uppercase">Emotional History</h2>
+                    <p className="text-muted text-[10px] font-bold uppercase tracking-[0.2em]">Archived neural states</p>
                 </div>
-              );
-            })}
-          </div>
-
-          {/* Mood Distribution Bar */}
-          <div className="p-8 border-t border-dark-border">
-            <p className="text-[10px] font-black text-muted uppercase tracking-[0.15em] mb-3">Mood Distribution</p>
-            <div className="flex gap-1 h-4 rounded-full overflow-hidden">
-              {(['great', 'happy', 'so-so', 'weird', 'bad'] as MoodLevel[]).map(level => {
-                const count = distribution[level] || 0;
-                const pct = totalEntries > 0 ? (count / totalEntries) * 100 : 0;
-                const colors: Record<MoodLevel, string> = {
-                  'great': 'bg-green-500',
-                  'happy': 'bg-green-400/70',
-                  'so-so': 'bg-yellow-500/60',
-                  'weird': 'bg-orange-500/50',
-                  'bad': 'bg-red-500/50',
-                };
-
-                if (pct === 0) return null;
-
-                return (
-                  <div
-                    key={level}
-                    className={`${colors[level]} transition-all`}
-                    style={{ width: `${pct}%` }}
-                    title={`${level}: ${count} (${Math.round(pct)}%)`}
-                  />
-                );
-              })}
+                <div className="text-[10px] font-black text-muted italic">
+                    {moods.length} TOTAL SESSIONS
+                </div>
             </div>
-            <div className="flex justify-between mt-2">
-              {(['great', 'happy', 'so-so', 'weird', 'bad'] as MoodLevel[]).map(level => {
-                const count = distribution[level] || 0;
-                return (
-                  <div key={level} className="flex items-center gap-1">
-                    <span className="text-xs">{moodEmojis[level]}</span>
-                    <span className="text-[10px] text-muted font-bold">{count}</span>
-                  </div>
-                );
-              })}
+            
+            <div className="max-h-[500px] overflow-y-auto custom-scrollbar p-2">
+                {moods.length === 0 ? (
+                    <div className="p-20 text-center text-muted italic uppercase text-[10px] tracking-[.3em]">
+                        Archive Empty: No neural data detected
+                    </div>
+                ) : (
+                    <div className="divide-y divide-dark-border/30">
+                        {moods.map((m) => (
+                            <div key={m.id} className="p-6 flex items-center gap-6 hover:bg-white/[0.02] transition-all group">
+                                <div className="w-14 h-14 rounded-2xl bg-background border border-dark-border flex items-center justify-center text-3xl group-hover:scale-110 transition-transform shadow-inner shrink-0">
+                                    {moodEmojis[m.mood as MoodLevel]}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-3">
+                                        <p className="font-black text-foreground uppercase text-sm tracking-widest">{m.mood}</p>
+                                        <span className="h-1 w-1 rounded-full bg-dark-border-light" />
+                                        <p className="text-[10px] text-muted font-bold tracking-tighter uppercase">
+                                            {new Date(m.entry_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                        </p>
+                                    </div>
+                                    {m.notes && (
+                                        <p className="text-xs italic text-muted mt-1 opacity-70 truncate" title={m.notes}>
+                                            "{m.notes}"
+                                        </p>
+                                    )}
+                                </div>
+                                <div className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase border ${
+                                    m.mood === 'great' ? 'border-accent-green/30 text-accent-green' : 
+                                    m.mood === 'bad' ? 'border-accent-red/30 text-accent-red' : 
+                                    'border-dark-border text-muted'
+                                }`}>
+                                    Logged
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* FAB for logging mood */}
+            <div className="p-4 bg-background/20 border-t border-dark-border flex justify-center">
+                <div className="w-8 h-1 bg-dark-border rounded-full opacity-50" />
+            </div>
+        </section>
+      </div>
+
       <MoodForm isOpen={showAddForm} onToggle={setShowAddForm} onMoodAdded={handleMoodAdded} />
     </main>
   );
@@ -2127,6 +2094,198 @@ export default function ReadingTimeline({ readings }: ReadingTimelineProps) {
 }
 </file>
 
+<file path="src/components/habits/RunningForm.tsx">
+'use client';
+import { useState } from 'react';
+import { createClient } from '@/utils/supabase/client';
+import { Workout } from '@/types/habits';
+
+interface RunningFormProps {
+    onWorkoutAdded?: (workout: Workout) => void;
+    isOpen?: boolean;
+    onToggle?: (open: boolean) => void;
+}
+
+export default function RunningForm({ onWorkoutAdded, isOpen = false, onToggle }: RunningFormProps) {
+    const supabase = createClient();
+    const [loading, setLoading] = useState(false);
+    const [formData, setFormData] = useState({
+        duration_minutes: '',
+        distance_km: '',
+        logged_date: new Date().toISOString().split('T')[0],
+        notes: '',
+    });
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value,
+        }));
+    };
+
+    // Calculate pace (min/km) from duration and distance
+    const calcPace = () => {
+        const dur = parseFloat(formData.duration_minutes);
+        const dist = parseFloat(formData.distance_km);
+        if (dur && dist && dist > 0) {
+            const paceMin = Math.floor(dur / dist);
+            const paceSec = Math.round(((dur / dist) - paceMin) * 60);
+            return `${paceMin}:${paceSec.toString().padStart(2, '0')}`;
+        }
+        return '--:--';
+    };
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setLoading(true);
+
+        try {
+            // 1. Get the current authenticated user to satisfy the user_id constraint
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+            if (authError || !user) {
+                alert('Error: You must be logged in to log a run.');
+                setLoading(false);
+                return;
+            }
+
+            const newWorkout = {
+                user_id: user.id, // Add the user_id to the payload
+                activity_type: 'running' as const,
+                duration_minutes: parseInt(formData.duration_minutes),
+                distance_km: formData.distance_km ? parseFloat(formData.distance_km) : undefined,
+                logged_date: formData.logged_date,
+                notes: formData.notes || undefined,
+            };
+
+            const { data, error } = await supabase
+                .from('workouts')
+                .insert([newWorkout])
+                .select()
+                .single();
+
+            if (error) {
+                alert(`Error: ${error.message}`);
+            } else {
+                alert('Run logged successfully! 🏃');
+                onWorkoutAdded?.(data);
+                onToggle?.(false);
+                setFormData({
+                    duration_minutes: '',
+                    distance_km: '',
+                    logged_date: new Date().toISOString().split('T')[0],
+                    notes: '',
+                });
+            }
+        } catch (err) {
+            alert('Failed to log run');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const pace = calcPace();
+
+    return (
+        <>
+            {/* Floating Action Button */}
+            <button
+                onClick={() => onToggle?.(!isOpen)}
+                className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-br from-accent-blue to-blue-700 text-white rounded-full flex items-center justify-center text-3xl font-bold hover:shadow-xl hover:shadow-accent-blue/20 hover:scale-110 transition-all transform z-50"
+            >
+                <span className={`transform transition-transform duration-300 ${isOpen ? 'rotate-45' : ''}`}>+</span>
+            </button>
+
+            {/* Modal Overlay & Form */}
+            {isOpen && (
+                <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => onToggle?.(false)}>
+                    <div className="bg-surface rounded-[40px] shadow-2xl w-full max-w-md overflow-hidden border border-dark-border animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
+                        {/* Header */}
+                        <div className="relative p-8 bg-accent-blue flex items-center gap-4">
+                            <button
+                                onClick={() => onToggle?.(false)}
+                                className="absolute top-6 right-6 w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center transition-all"
+                            >
+                                <span className="text-xl">✕</span>
+                            </button>
+
+                            <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+                                <span className="text-3xl">🏃</span>
+                            </div>
+                            <div className="text-white pr-8">
+                                <h4 className="text-xl font-black leading-tight uppercase tracking-tight">Log Run</h4>
+                                <p className="text-white/70 text-xs font-bold uppercase tracking-widest">Track your progress</p>
+                            </div>
+                        </div>
+
+                        {/* Form Content */}
+                        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                            {/* Live Pace Display */}
+                            <div className="bg-background rounded-3xl p-6 border border-dark-border text-center">
+                                <p className="text-[9px] font-black text-muted uppercase tracking-[0.15em] mb-2">Estimated Pace</p>
+                                <p className="text-4xl font-black text-accent-blue">{pace}</p>
+                                <p className="text-[10px] text-muted uppercase tracking-wider mt-1">min / km</p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-semibold text-muted uppercase mb-2">Distance (km)</label>
+                                    <input
+                                        type="number"
+                                        name="distance_km"
+                                        value={formData.distance_km}
+                                        onChange={handleChange}
+                                        required
+                                        step="0.01"
+                                        min="0.1"
+                                        className="w-full p-3 bg-input-bg border border-dark-border-light rounded-xl focus:ring-2 focus:ring-accent-blue outline-none text-foreground text-lg font-bold text-center placeholder:text-muted/50"
+                                        placeholder="5.00"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-muted uppercase mb-2">Duration (min)</label>
+                                    <input
+                                        type="number"
+                                        name="duration_minutes"
+                                        value={formData.duration_minutes}
+                                        onChange={handleChange}
+                                        required
+                                        min="1"
+                                        className="w-full p-3 bg-input-bg border border-dark-border-light rounded-xl focus:ring-2 focus:ring-accent-blue outline-none text-foreground text-lg font-bold text-center placeholder:text-muted/50"
+                                        placeholder="30"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-semibold text-muted uppercase mb-2">Date</label>
+                                <input
+                                    type="date"
+                                    name="logged_date"
+                                    value={formData.logged_date}
+                                    onChange={handleChange}
+                                    className="w-full p-3 bg-input-bg border border-dark-border-light rounded-xl focus:ring-2 focus:ring-accent-blue outline-none text-foreground"
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full py-5 bg-accent-blue text-white rounded-[24px] font-black text-lg hover:bg-accent-blue/80 transition-all shadow-xl shadow-accent-blue/10 disabled:bg-dark-border"
+                            >
+                                {loading ? 'LOGGING...' : 'LOG RUN 🏃'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+}
+</file>
+
 <file path="src/components/habits/Sidebar.tsx">
 'use client' // Required because we are using hooks like useRouter
 import Link from 'next/link';
@@ -2137,7 +2296,7 @@ import { useEffect, useState } from 'react';
 const navItems = [
   { name: 'Overview', href: '/' },
   { name: 'Workouts', href: '/workouts' },
-  { name: 'Reading', href: '/reading' },
+  { name: 'Library', href: '/reading' },
   { name: 'Body Stats', href: '/body' },
   { name: 'Mood', href: '/mood' },
 ];
@@ -2834,100 +2993,6 @@ export default function WorkoutStats({ workouts }: WorkoutStatsProps) {
 }
 </file>
 
-<file path="src/components/habits/WorkoutTimeline.tsx">
-import { Workout } from '@/types/habits';
-
-interface WorkoutTimelineProps {
-  workouts: Workout[];
-}
-
-const activityEmojis: Record<Workout['activity_type'], string> = {
-  running: '🏃',
-  training: '💪',
-  walking: '🚶',
-  swimming: '🏊',
-  cycling: '🚴',
-  yoga: '🧘',
-  other: '⚡',
-};
-
-export default function WorkoutTimeline({ workouts }: WorkoutTimelineProps) {
-  if (workouts.length === 0) {
-    return (
-      <div className="bg-surface p-8 rounded-2xl border border-dark-border shadow-sm text-center">
-        <p className="text-muted">No workouts to display</p>
-      </div>
-    );
-  }
-
-  // Sort by date descending and group by date
-  const sorted = [...workouts].sort((a, b) => new Date(b.logged_date).getTime() - new Date(a.logged_date).getTime());
-
-  const grouped = sorted.reduce((acc, workout) => {
-    const date = new Date(workout.logged_date).toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-
-    if (!acc[date]) {
-      acc[date] = [];
-    }
-    acc[date].push(workout);
-    return acc;
-  }, {} as Record<string, Workout[]>);
-
-  return (
-    <div className="bg-surface rounded-2xl border border-dark-border shadow-sm overflow-hidden">
-      <div className="p-6 border-b border-dark-border">
-        <h3 className="text-lg font-bold text-foreground">Workout Timeline</h3>
-      </div>
-
-      <div className="relative">
-        {Object.entries(grouped).map(([date, dayWorkouts], index) => (
-          <div key={date} className="border-b border-dark-border last:border-b-0">
-            <div className="p-6">
-              {/* Date Header */}
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-2 h-2 bg-accent-blue rounded-full"></div>
-                <h4 className="font-semibold text-foreground/80">{date}</h4>
-                <span className="text-xs bg-[#264f78] text-blue-300 px-2 py-1 rounded-full">
-                  {dayWorkouts.length} {dayWorkouts.length === 1 ? 'workout' : 'workouts'}
-                </span>
-              </div>
-
-              {/* Workouts for this date */}
-              <div className="space-y-2 ml-5">
-                {dayWorkouts.map(workout => (
-                  <div
-                    key={workout.id}
-                    className="p-3 bg-gradient-to-r from-surface-hover to-surface rounded-lg flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{activityEmojis[workout.activity_type]}</span>
-                      <div>
-                        <p className="font-medium text-foreground capitalize">
-                          {workout.activity_type.replace('-', ' ')}
-                        </p>
-                        <p className="text-sm text-muted">
-                          {workout.duration_minutes} mins
-                          {workout.distance_km && ` • ${workout.distance_km} km`}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-</file>
-
 <file path="package.json">
 {
   "name": "hiroshima",
@@ -2962,6 +3027,210 @@ export default function WorkoutTimeline({ workouts }: WorkoutTimelineProps) {
     "tailwindcss": "^4",
     "typescript": "^5"
   }
+}
+</file>
+
+<file path="src/app/layout.tsx">
+import Sidebar from '@/components/habits/Sidebar';
+import './globals.css';
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body className="bg-background text-foreground">
+        <Sidebar />
+        <main className="ml-64 p-8"> {/* ml-64 pushes content to the right of Sidebar */}
+          {children}
+        </main>
+      </body>
+    </html>
+  );
+}
+</file>
+
+<file path="src/app/page.tsx">
+import StatCard from '@/components/habits/StatCard';
+import BodyForm from '@/components/habits/BodyForm';
+import { MOCK_WORKOUTS } from '@/utils/mockData';
+
+export default function Home() {
+  // Logic: Calculate total minutes from mock data
+  const totalMinutes = MOCK_WORKOUTS.reduce((acc, curr) => acc + curr.duration_minutes, 0);
+
+  return (
+    <main className="max-w-7xl mx-auto p-8 bg-background min-h-screen">
+      <header className="mb-8">
+        <h1 className="text-4xl font-extrabold text-foreground tracking-tight">Hiroshima Dashboard</h1>
+        <p className="text-muted">Track your evolution, day by day.</p>
+      </header>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard title="Total Training" value={totalMinutes} unit="mins" />
+        <StatCard title="Avg Mood" value="Great" />
+        <StatCard title="Books Read" value={0} />
+        <div className='mt-8'> <BodyForm />
+        </div>
+      </div>
+    </main>
+  );
+}
+</file>
+
+<file path="src/components/habits/WorkoutTimeline.tsx">
+'use client';
+import { Workout } from '@/types/habits';
+
+interface WorkoutTimelineProps {
+  workouts: Workout[];
+}
+
+const activityEmojis: Record<Workout['activity_type'], string> = {
+  running: '🏃',
+  training: '💪',
+  walking: '🚶',
+  swimming: '🏊',
+  cycling: '🚴',
+  yoga: '🧘',
+  other: '⚡',
+};
+
+export default function WorkoutTimeline({ workouts }: WorkoutTimelineProps) {
+  if (workouts.length === 0) {
+    return (
+      <div className="bg-surface p-8 rounded-[32px] border border-dark-border text-center">
+        <p className="text-muted text-sm italic">No data detected in the neural link.</p>
+      </div>
+    );
+  }
+
+  // Sort by date descending
+  const sorted = [...workouts].sort((a, b) => new Date(b.logged_date).getTime() - new Date(a.logged_date).getTime());
+
+  const grouped = sorted.reduce((acc, workout) => {
+    const date = new Date(workout.logged_date).toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+
+    if (!acc[date]) acc[date] = [];
+    acc[date].push(workout);
+    return acc;
+  }, {} as Record<string, Workout[]>);
+
+  return (
+    <div className="bg-surface rounded-[32px] border border-dark-border shadow-sm overflow-hidden flex flex-col">
+      <div className="p-8 border-b border-dark-border flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-black text-foreground tracking-tight italic uppercase">Workout Timeline</h2>
+          <p className="text-muted text-[10px] font-bold uppercase tracking-[0.2em]">Historical activity logs</p>
+        </div>
+        <div className="text-[10px] font-black text-muted italic">
+          {workouts.length} TOTAL ENTRIES
+        </div>
+      </div>
+
+      {/* SCROLLABLE CONTAINER */}
+      <div className="max-h-[500px] overflow-y-auto custom-scrollbar p-2">
+        <div className="relative">
+          {Object.entries(grouped).map(([date, dayWorkouts]) => (
+            <div key={date} className="p-6 last:border-b-0 border-b border-dark-border/30">
+              {/* Date Header */}
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-2 h-2 bg-accent-blue rounded-full shadow-[0_0_8px_rgba(86,156,214,0.6)]" />
+                <h4 className="font-bold text-foreground/80 text-sm uppercase tracking-wider">{date}</h4>
+                <span className="text-[10px] bg-highlight/30 text-accent-blue px-2 py-0.5 rounded-full font-black border border-accent-blue/20">
+                  {dayWorkouts.length} {dayWorkouts.length === 1 ? 'WORKOUT' : 'WORKOUTS'}
+                </span>
+              </div>
+
+              {/* Workouts for this date */}
+              <div className="space-y-3 ml-5">
+                {dayWorkouts.map(workout => (
+                  <div
+                    key={workout.id}
+                    className="p-4 bg-background/50 border border-dark-border/50 rounded-2xl flex items-center justify-between group hover:border-accent-blue/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-surface border border-dark-border flex items-center justify-center text-xl">
+                        {activityEmojis[workout.activity_type]}
+                      </div>
+                      <div>
+                        <p className="font-black text-foreground capitalize text-sm tracking-tight">
+                          {workout.activity_type}
+                        </p>
+                        <p className="text-[11px] text-muted font-bold uppercase tracking-tighter">
+                          {workout.duration_minutes} MINS 
+                          {workout.distance_km && ` • ${workout.distance_km} KM`}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Footer hint */}
+      <div className="p-4 bg-background/20 border-t border-dark-border flex justify-center">
+          <div className="w-8 h-1 bg-dark-border rounded-full opacity-50" />
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/types/habits.ts">
+export type MoodLevel = 'bad' | 'weird' | 'so-so' | 'happy' | 'great';
+
+export interface Mood {
+  id: string;
+  user_id?: string;
+  mood: MoodLevel;
+  notes?: string;
+  entry_date: string;
+}
+
+export interface Workout {
+  id: string;
+  activity_type: 'running' | 'training' | 'walking' | 'swimming' | 'cycling' | 'yoga' | 'other';
+  duration_minutes: number;
+  distance_km?: number;
+  logged_date: string;
+}
+
+export interface BodyStats {
+  weight_kg: number;
+  waist_cm: number;
+  chest_cm: number;
+  thigh_cm: number;
+  logged_date: string;
+}
+
+export interface Reading {
+  id: string;
+  user_id?: string;
+  title: string;
+  author: string;
+  pages_read: number;
+  total_pages: number;
+  genre: 'fiction' | 'non-fiction' | 'science' | 'biography' | 'history' | 'self-help' | 'mystery' | 'other';
+  status: 'reading' | 'completed' | 'paused';
+  is_completed?: boolean;
+  rating?: number;
+  notes?: string;
+  started_date: string;
+  completed_date?: string;
+  cover_image_url?: string;
+  created_at?: string;
 }
 </file>
 
@@ -3038,56 +3307,23 @@ select option {
   background: #252526;
   color: #d4d4d4;
 }
-</file>
 
-<file path="src/app/layout.tsx">
-import Sidebar from '@/components/habits/Sidebar';
-import './globals.css';
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html lang="en">
-      <body className="bg-background text-foreground">
-        <Sidebar />
-        <main className="ml-64 p-8"> {/* ml-64 pushes content to the right of Sidebar */}
-          {children}
-        </main>
-      </body>
-    </html>
-  );
+/* Custom Cyber Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
 }
-</file>
 
-<file path="src/app/page.tsx">
-import StatCard from '@/components/habits/StatCard';
-import BodyForm from '@/components/habits/BodyForm';
-import { MOCK_WORKOUTS } from '@/utils/mockData';
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
 
-export default function Home() {
-  // Logic: Calculate total minutes from mock data
-  const totalMinutes = MOCK_WORKOUTS.reduce((acc, curr) => acc + curr.duration_minutes, 0);
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #3c3c3c; /* var(--border) */
+  border-radius: 10px;
+}
 
-  return (
-    <main className="max-w-7xl mx-auto p-8 bg-background min-h-screen">
-      <header className="mb-8">
-        <h1 className="text-4xl font-extrabold text-foreground tracking-tight">Hiroshima Dashboard</h1>
-        <p className="text-muted">Track your evolution, day by day.</p>
-      </header>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard title="Total Training" value={totalMinutes} unit="mins" />
-        <StatCard title="Avg Mood" value="Great" />
-        <StatCard title="Books Read" value={0} />
-        <div className='mt-8'> <BodyForm />
-        </div>
-      </div>
-    </main>
-  );
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #569cd6; /* var(--accent-blue) */
 }
 </file>
 
@@ -3099,12 +3335,11 @@ import { Reading } from '@/types/habits';
 import ReadingForm from '@/components/habits/ReadingForm';
 import UpdateProgress from '@/components/habits/UpdateProgress';
 import ReadingTimeline from '@/components/habits/ReadingTimeline';
-import { MOCK_READINGS } from '@/utils/mockData';
 
 export default function Page() {
   const supabase = createClient();
-  const [readings, setReadings] = useState<Reading[]>(MOCK_READINGS);
-  const [filteredReadings, setFilteredReadings] = useState<Reading[]>(MOCK_READINGS);
+  // Initialize with empty array - no more MOCK_READINGS fallback
+  const [readings, setReadings] = useState<Reading[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -3114,11 +3349,12 @@ export default function Page() {
 
   const fetchReadings = async () => {
     try {
+      setLoading(true);
       const { data: { user }, error: authError } = await supabase.auth.getUser();
 
       if (authError || !user) {
-        setReadings(MOCK_READINGS);
-        setFilteredReadings(MOCK_READINGS);
+        console.error('Authentication error or no user found');
+        setReadings([]);
         setLoading(false);
         return;
       }
@@ -3130,15 +3366,14 @@ export default function Page() {
         .order('started_date', { ascending: false });
 
       if (error) {
-        setReadings(MOCK_READINGS);
-        setFilteredReadings(MOCK_READINGS);
+        console.error('Database Error:', error.message);
+        setReadings([]);
       } else if (data) {
         setReadings(data);
-        setFilteredReadings(data);
       }
     } catch (err) {
-      setReadings(MOCK_READINGS);
-      setFilteredReadings(MOCK_READINGS);
+      console.error('Connection error:', err);
+      setReadings([]);
     } finally {
       setLoading(false);
     }
@@ -3146,40 +3381,61 @@ export default function Page() {
 
   const handleReadingAdded = (newReading: Reading) => {
     setReadings(prev => [newReading, ...prev]);
-    setFilteredReadings(prev => [newReading, ...prev]);
   };
 
   const handleProgressUpdated = (updatedReading: Reading) => {
-    const updateList = (prev: Reading[]) =>
-      prev.map(r => (r.id === updatedReading.id ? updatedReading : r));
-
-    setReadings(updateList);
-    setFilteredReadings(updateList);
+    setReadings(prev =>
+      prev.map(r => (r.id === updatedReading.id ? updatedReading : r))
+    );
   };
 
   return (
-    <main className="max-w-7xl mx-auto p-8 bg-background min-h-screen">
-      {/* Header */}
-      <header className="mb-8">
-        <h1 className="text-4xl font-extrabold text-foreground tracking-tight text-left">Reading Journey</h1>
-        <p className="text-muted text-left">Your historical reading activity log.</p>
-      </header>
+    <main className="min-h-screen bg-background p-8 flex flex-col items-center">
+      {/* Centered Content Constraint Container */}
+      <div className="w-full max-w-5xl space-y-12">
+        
+        {/* Header */}
+        <header className="text-left">
+          <h1 className="text-4xl font-extrabold text-foreground tracking-tight italic uppercase">Hiroshima Collection</h1>
+          <p className="text-muted text-[10px] font-bold uppercase tracking-[0.3em] mt-2">Live Neural Library Link</p>
+        </header>
 
-      {/* Update Progress Section - Book Album */}
-      <section className="mb-12">
-        <UpdateProgress readings={readings} onProgressUpdated={handleProgressUpdated} />
-      </section>
+        {/* Update Progress Section - Book Album */}
+        <section>
+          {loading ? (
+            <div className="h-[400px] flex items-center justify-center bg-surface rounded-[32px] border border-dark-border animate-pulse">
+               <p className="text-muted font-black uppercase tracking-widest text-xs text-center px-8">
+                Scanning Library Archive...
+               </p>
+            </div>
+          ) : (
+            <UpdateProgress readings={readings} onProgressUpdated={handleProgressUpdated} />
+          )}
+        </section>
 
-      {/* Content Section - Timeline */}
-      <section className="mt-12 flex justify-start">
-        {loading ? (
-          <div className="text-left py-12">
-            <p className="text-muted italic">Loading activity feed...</p>
+        {/* Content Section - Timeline */}
+        <section className="pb-24">
+          <div className="flex justify-between items-end mb-8 border-b border-dark-border pb-4">
+             <div>
+                <h2 className="text-2xl font-black text-foreground tracking-tight italic uppercase">Activity Feed</h2>
+                <p className="text-muted text-[10px] font-bold uppercase tracking-[0.2em]">Historical archive logs</p>
+             </div>
+             <div className="text-[10px] font-black text-accent-purple">
+                {readings.length} VOLUMES TRACKED
+             </div>
           </div>
-        ) : (
-          <ReadingTimeline readings={filteredReadings} />
-        )}
-      </section>
+
+          {loading ? (
+            <div className="text-center py-12 text-muted italic">Decrypting reading activity...</div>
+          ) : readings.length === 0 ? (
+            <div className="text-center py-12 bg-surface rounded-[32px] border border-dark-border border-dashed">
+               <p className="text-muted italic">No logs found in the current archive.</p>
+            </div>
+          ) : (
+            <ReadingTimeline readings={readings} />
+          )}
+        </section>
+      </div>
 
       {/* Floating Action Button for Adding Books */}
       <ReadingForm isOpen={showAddForm} onToggle={setShowAddForm} onReadingAdded={handleReadingAdded} />
@@ -3195,7 +3451,8 @@ import { createClient } from '@/utils/supabase/client';
 import { Workout } from '@/types/habits';
 import RunningForm from '@/components/habits/RunningForm';
 import WorkoutTimeline from '@/components/habits/WorkoutTimeline';
-import { MOCK_WORKOUTS } from '@/utils/mockData';
+// import PaceChart from '@/components/habits/PerformanceChart';
+import PerformanceChart from '@/components/habits/PerformanceChart';  
 
 // Calculate running streak from consecutive dates
 function calcStreak(workouts: Workout[]): number {
@@ -3224,7 +3481,8 @@ function calcStreak(workouts: Workout[]): number {
 
 export default function Page() {
   const supabase = createClient();
-  const [workouts, setWorkouts] = useState<Workout[]>(MOCK_WORKOUTS);
+  // Initialize with empty array - no more MOCK_WORKOUTS fallback
+  const [workouts, setWorkouts] = useState<Workout[]>([]); 
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -3234,20 +3492,21 @@ export default function Page() {
 
   const fetchWorkouts = async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('workouts')
         .select('*')
         .order('logged_date', { ascending: false });
 
       if (error) {
-        console.log('Using mock data - Supabase not configured');
-        setWorkouts(MOCK_WORKOUTS);
+        console.error('Database Error:', error.message);
+        setWorkouts([]); // Ensure state is empty on error
       } else if (data) {
         setWorkouts(data);
       }
     } catch (err) {
-      console.log('Using mock data - connection error');
-      setWorkouts(MOCK_WORKOUTS);
+      console.error('Connection error:', err);
+      setWorkouts([]);
     } finally {
       setLoading(false);
     }
@@ -3257,7 +3516,7 @@ export default function Page() {
     setWorkouts(prev => [newWorkout, ...prev]);
   };
 
-  // Stats
+  // Stats Logic
   const runs = workouts.filter(w => w.activity_type === 'running');
   const totalRuns = runs.length;
   const totalKm = runs.reduce((acc, w) => acc + (w.distance_km || 0), 0);
@@ -3267,193 +3526,125 @@ export default function Page() {
   const avgPaceSec = Math.round((avgPace - avgPaceMin) * 60);
   const streak = calcStreak(workouts);
 
-  // Recent runs (last 5)
   const recentRuns = [...runs]
     .sort((a, b) => new Date(b.logged_date).getTime() - new Date(a.logged_date).getTime())
     .slice(0, 5);
 
   return (
-    <main className="max-w-7xl mx-auto p-8 bg-background min-h-screen">
-      {/* Header */}
-      <header className="mb-8">
-        <h1 className="text-4xl font-extrabold text-foreground tracking-tight">Running</h1>
-        <p className="text-muted">Track every run, every kilometer.</p>
-      </header>
-
-      {/* Stats Strip — reordered: Total Runs, Distance, Avg Pace, Streak */}
-      <section className="mb-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-br from-[#1e3a5f] to-[#1a2d47] p-6 rounded-xl border border-[#264f78]">
-            <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.15em] mb-1">Total Runs</p>
-            <span className="text-3xl font-black text-blue-300">{totalRuns}</span>
-          </div>
-
-          <div className="bg-gradient-to-br from-[#1a3a2a] to-[#152e22] p-6 rounded-xl border border-[#2d5a3f]">
-            <p className="text-[10px] font-black text-green-400 uppercase tracking-[0.15em] mb-1">Distance</p>
-            <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-black text-green-300">{totalKm.toFixed(1)}</span>
-              <span className="text-sm text-green-500">km</span>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-[#2d1f3d] to-[#231735] p-6 rounded-xl border border-[#4a2d6b]">
-            <p className="text-[10px] font-black text-purple-400 uppercase tracking-[0.15em] mb-1">Avg Pace</p>
-            <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-black text-purple-300">
-                {totalKm > 0 ? `${avgPaceMin}:${avgPaceSec.toString().padStart(2, '0')}` : '--:--'}
-              </span>
-              <span className="text-sm text-purple-500">/km</span>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-[#3d2a1a] to-[#352315] p-6 rounded-xl border border-[#5a3d20] relative overflow-hidden">
-            <div className="absolute top-3 right-3 text-3xl opacity-30">🔥</div>
-            <p className="text-[10px] font-black text-orange-400 uppercase tracking-[0.15em] mb-1">Streak</p>
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-black text-orange-300">{streak}</span>
-              <span className="text-sm text-orange-500 font-bold">{streak === 1 ? 'day' : 'days'}</span>
-            </div>
-            <p className="text-[9px] text-orange-600 mt-1 font-bold uppercase tracking-wider">
-              {streak >= 7 ? '🔥 On fire!' : streak >= 3 ? '💪 Keep going!' : '🏃 Start strong!'}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Recent Runs */}
-      <section className="mb-12">
-        <div className="bg-surface rounded-[32px] border border-dark-border shadow-sm overflow-hidden">
-          <div className="p-8 border-b border-dark-border">
-            <h2 className="text-2xl font-black text-foreground tracking-tight italic">LATEST RUNS</h2>
-            <p className="text-muted text-[10px] font-bold uppercase tracking-[0.2em]">Your most recent sessions</p>
-          </div>
-
-          {recentRuns.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-muted">No runs logged yet. Hit the + button to get started!</p>
+    <main className="min-h-screen bg-background p-8 flex flex-col items-center">
+      <div className="w-full max-w-5xl space-y-12">
+        
+        <header className="text-left">
+          <h1 className="text-4xl font-extrabold text-foreground tracking-tight italic uppercase">Hiroshima Running</h1>
+          <p className="text-muted text-[10px] font-bold uppercase tracking-[0.3em] mt-2">Live Database Connection Active</p>
+        </header>
+        
+        {/* If loading, we show a clean message. Once loaded, if no data, PaceChart handles it */}
+        <section>
+          {loading ? (
+            <div className="h-[300px] flex items-center justify-center bg-surface rounded-[32px] border border-dark-border animate-pulse">
+               <p className="text-muted font-black uppercase tracking-widest text-xs">Syncing Performance Data...</p>
             </div>
           ) : (
-            <div className="divide-y divide-dark-border">
-              {recentRuns.map((run, i) => {
-                const date = new Date(run.logged_date);
-                const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-                const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                const pace = run.distance_km && run.distance_km > 0
-                  ? run.duration_minutes / run.distance_km
-                  : null;
-                const paceMin = pace ? Math.floor(pace) : null;
-                const paceSec = pace ? Math.round((pace - Math.floor(pace)) * 60) : null;
-
-                return (
-                  <div key={run.id} className="px-8 py-5 flex items-center gap-6 hover:bg-surface-hover transition-colors">
-                    {/* Rank / Index */}
-                    <div className="w-8 h-8 rounded-lg bg-dark-border flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs font-black text-muted">{i + 1}</span>
-                    </div>
-
-                    {/* Date */}
-                    <div className="w-16 text-center flex-shrink-0">
-                      <p className="text-[10px] font-black text-muted uppercase">{dayName}</p>
-                      <p className="text-sm font-bold text-foreground">{dateStr}</p>
-                    </div>
-
-                    {/* Distance */}
-                    <div className="flex-1">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-lg font-black text-green-400">{run.distance_km?.toFixed(1) || '—'}</span>
-                        <span className="text-xs text-muted">km</span>
-                      </div>
-                    </div>
-
-                    {/* Duration */}
-                    <div className="flex-1">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-lg font-black text-blue-400">{run.duration_minutes}</span>
-                        <span className="text-xs text-muted">min</span>
-                      </div>
-                    </div>
-
-                    {/* Pace */}
-                    <div className="flex-shrink-0">
-                      <div className="bg-background px-3 py-1.5 rounded-lg border border-dark-border">
-                        <span className="text-sm font-black text-purple-400">
-                          {paceMin !== null && paceSec !== null
-                            ? `${paceMin}:${paceSec.toString().padStart(2, '0')}`
-                            : '--:--'
-                          }
-                        </span>
-                        <span className="text-[9px] text-muted ml-1">/km</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <PerformanceChart workouts={workouts} />
           )}
-        </div>
-      </section>
+        </section>
 
-      {/* Timeline Section */}
-      <section>
-        {loading ? (
-          <div className="text-left py-12">
-            <p className="text-muted italic">Loading runs...</p>
+        {/* Stats Strip */}
+        <section>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-gradient-to-br from-[#1e3a5f] to-[#1a2d47] p-6 rounded-xl border border-[#264f78]">
+              <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.15em] mb-1">Total Runs</p>
+              <span className="text-3xl font-black text-blue-300">{loading ? '—' : totalRuns}</span>
+            </div>
+
+            <div className="bg-gradient-to-br from-[#1a3a2a] to-[#152e22] p-6 rounded-xl border border-[#2d5a3f]">
+              <p className="text-[10px] font-black text-green-400 uppercase tracking-[0.15em] mb-1">Distance</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-black text-green-300">{loading ? '—' : totalKm.toFixed(1)}</span>
+                <span className="text-sm text-green-500">km</span>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-[#2d1f3d] to-[#231735] p-6 rounded-xl border border-[#4a2d6b]">
+              <p className="text-[10px] font-black text-purple-400 uppercase tracking-[0.15em] mb-1">Avg Pace</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-black text-purple-300">
+                  {loading ? '--:--' : (totalKm > 0 ? `${avgPaceMin}:${avgPaceSec.toString().padStart(2, '0')}` : '--:--')}
+                </span>
+                <span className="text-sm text-purple-500">/km</span>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-[#3d2a1a] to-[#352315] p-6 rounded-xl border border-[#5a3d20] relative overflow-hidden">
+              <div className="absolute top-3 right-3 text-3xl opacity-30">🔥</div>
+              <p className="text-[10px] font-black text-orange-400 uppercase tracking-[0.15em] mb-1">Streak</p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-black text-orange-300">{loading ? '—' : streak}</span>
+                <span className="text-sm text-orange-500 font-bold">{streak === 1 ? 'day' : 'days'}</span>
+              </div>
+            </div>
           </div>
-        ) : (
-          <WorkoutTimeline workouts={workouts} />
-        )}
-      </section>
+        </section>
 
-      {/* FAB for logging runs */}
+        {/* Recent Runs */}
+        <section>
+          <div className="bg-surface rounded-[32px] border border-dark-border shadow-sm overflow-hidden">
+            <div className="p-8 border-b border-dark-border">
+              <h2 className="text-2xl font-black text-foreground tracking-tight italic uppercase">Latest Runs</h2>
+            </div>
+
+            {loading ? (
+              <div className="p-12 text-center text-muted animate-pulse">Fetching latest entries...</div>
+            ) : recentRuns.length === 0 ? (
+              <div className="p-12 text-center">
+                <p className="text-muted italic">No records found in database.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-dark-border">
+                {recentRuns.map((run, i) => {
+                  const pace = run.distance_km && run.distance_km > 0 ? run.duration_minutes / run.distance_km : null;
+                  const paceMin = pace ? Math.floor(pace) : null;
+                  const paceSec = pace ? Math.round((pace - Math.floor(pace)) * 60) : null;
+
+                  return (
+                    <div key={run.id} className="px-8 py-5 flex items-center gap-6 hover:bg-surface-hover transition-colors">
+                      <div className="w-8 h-8 rounded-lg bg-dark-border flex items-center justify-center">
+                        <span className="text-xs font-black text-muted">{i + 1}</span>
+                      </div>
+                      <div className="w-24">
+                        <p className="text-sm font-bold text-foreground">{new Date(run.logged_date).toLocaleDateString()}</p>
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-lg font-black text-green-400">{run.distance_km?.toFixed(1)} km</span>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <div className="bg-background px-3 py-1.5 rounded-lg border border-dark-border font-black text-purple-400">
+                           {paceMin}:{paceSec?.toString().padStart(2, '0')} /km
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Scrollable Timeline */}
+        <section className="pb-24">
+          {loading ? (
+            <div className="text-center py-12 text-muted italic">Decrypting neural activity...</div>
+          ) : (
+            <WorkoutTimeline workouts={workouts} />
+          )}
+        </section>
+
+      </div>
+
       <RunningForm isOpen={showAddForm} onToggle={setShowAddForm} onWorkoutAdded={handleWorkoutAdded} />
     </main>
   );
-}
-</file>
-
-<file path="src/types/habits.ts">
-export type MoodLevel = 'bad' | 'weird' | 'so-so' | 'happy' | 'great';
-
-export interface Mood {
-  id: string;
-  user_id?: string;
-  mood: MoodLevel;
-  notes?: string;
-  entry_date: string;
-}
-
-export interface Workout {
-  id: string;
-  activity_type: 'running' | 'training' | 'walking' | 'swimming' | 'cycling' | 'yoga' | 'other';
-  duration_minutes: number;
-  distance_km?: number;
-  logged_date: string;
-}
-
-export interface BodyStats {
-  weight_kg: number;
-  waist_cm: number;
-  chest_cm: number;
-  thigh_cm: number;
-  logged_date: string;
-}
-
-export interface Reading {
-  id: string;
-  user_id?: string;
-  title: string;
-  author: string;
-  pages_read: number;
-  total_pages: number;
-  genre: 'fiction' | 'non-fiction' | 'science' | 'biography' | 'history' | 'self-help' | 'mystery' | 'other';
-  status: 'reading' | 'completed' | 'paused';
-  is_completed?: boolean;
-  rating?: number;
-  notes?: string;
-  started_date: string;
-  completed_date?: string;
-  cover_image_url?: string;
-  created_at?: string;
 }
 </file>
 
